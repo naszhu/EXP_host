@@ -48,7 +48,29 @@ async function runExperiment( ) {
             })};
             data.width =  window.innerWidth;
             data.height = window.innerHeight;
+
+            const parms = new URLSearchParams(window.location.search);
+            var subject_id = parms.get('subject_id');
+            if (subject_id !== undefined){
+                subject_id = data.id;
+                // console.log("dataid-----------",data.id)
+            }
+            
+            // console.log("ID-----------",subject_id)
+            if (!(subject_id === undefined || subject_id === null || subject_id === "")) {
+                // console.log("savenow-----------")
+                // fetch(`https://jspsych-backend.onrender.com/submit?subject_id=${subject_id}`, {
+                fetch(`https://script.google.com/macros/s/AKfycbzlC1DCArBtFr9U-x9K7072RwJ2yfa2Ay9i3DY5mNckbIwEzoQoDtM5owlzfPWlZxoI/exec?subject_id=${subject_id}`, {
+                    method: "POST",
+                    // mode: "no-cors",
+                    body: jsPsych.data.get().csv(),
+                    headers: {
+                        "Content-Type": "text/plain"
+                    }
+                    });
+            }
         },
+
         on_finish: function() {
             
             lasttestpos = jsPsych.data.get().select("testPos_final").values;
@@ -99,20 +121,24 @@ async function runExperiment( ) {
                 console.log("sucess!!")
                 window.location = confirmid;
                 }
-            }
-    // on_start: function(){
-    //   jsPsych.pluginAPI.requestFullscreen();
-    // }
+            },
+    on_start: function(){
+        
+
+    }
     });
+
+    var timeline=[];
+   
+    var subject_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
+    var study_id = jsPsych.data.getURLVariable('STUDY_ID');
+    var session_id = jsPsych.data.getURLVariable('SESSION_ID');
 
     JT = x=>jsPsych.timelineVariable(x);
     JRR = (x,y)=>jsPsych.randomization.repeat(x,y);
 
-    
-    var timeline=[];
-    var subject_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
-    var study_id = jsPsych.data.getURLVariable('STUDY_ID');
-    var session_id = jsPsych.data.getURLVariable('SESSION_ID');
+    console.log("new working")
+
 
     startExperimentTimer()
 
@@ -1160,9 +1186,14 @@ var enterid = {
         console.log(continueButton)
     },
     on_finish:function(data){
-        data.id=data.response["Q0"];
+
+        // console.log(data.response["Q0"],"data!!!!!!!11")
+        current_id = data.response["Q0"];
+        jsPsych.data.addProperties({
+            id: current_id
+        });
         // check below
-        if (oldids.includes(data.id)) {
+        if (oldids.includes(current_id)) {
             alert(`
             Dear participant,
             
@@ -1971,14 +2002,6 @@ var final_instruction = {
     on_finish: function(data){
         jsPsych.data.get().localSave('csv', 'ekstra.csv');
         jsPsych.endExperiment();
-
-        fetch('https://jspsych-backend.onrender.com/submit', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(jsPsych.data.get().json())
-        });
                 // jsPsych.endExperiment();
             }
         }

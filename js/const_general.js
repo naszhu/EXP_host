@@ -13,12 +13,13 @@ display: block !important; /* or 'inline-block', 'flex', etc. */
 `;
 
 const picdir = "images/"
-const codeversion_begins = 1.5;//!! v1= pilot
+const codeversion_begins = 2;//!! v2= render backend!!
 
 const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
 
 
-var is_debug = false //!!
+var is_debug = true //!!
+console.log("is_debug:", is_debug)
 const is_inst_fullscreen = true;//!!
 const is_showcorrect_inlog = false; //!!
 const timeout_inmin = 200; //100 minutes
