@@ -1971,9 +1971,17 @@ var final_instruction = {
     on_finish: function(data){
         jsPsych.data.get().localSave('csv', 'ekstra.csv');
         jsPsych.endExperiment();
-        // jsPsych.endExperiment();
-    }
-}
+
+        fetch('https://jspsych-backend.onrender.com/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsPsych.data.get().json())
+        });
+                // jsPsych.endExperiment();
+            }
+        }
     // timeline.push(final_instruction)
 
 var survey_HaveSeenImages = {
