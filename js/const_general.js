@@ -18,7 +18,7 @@ const codeversion_begins = 1.5;//!! v1= pilot
 const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
 
 
-var is_debug = true //!!
+var is_debug = false //!!
 const is_inst_fullscreen = true;//!!
 const is_showcorrect_inlog = false; //!!
 const timeout_inmin = 200; //100 minutes
