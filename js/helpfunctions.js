@@ -11,7 +11,29 @@
 //********************************************************************************************************
 // JT = x=>jsPsych.timelineVariable(x);
 // JRR = (x,y)=>jsPsych.randomization.repeat(x,y);
-
+function replaceUndefinedWithNull(obj) {
+    if (obj === undefined) {
+      return null; // Base case: if the object itself is undefined
+    }
+    if (obj === null || typeof obj !== 'object') {
+      return obj; // Return primitives, null, or non-objects as is
+    }
+  
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => replaceUndefinedWithNull(item));
+    }
+  
+    // Handle objects (maps)
+    const newObj = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = replaceUndefinedWithNull(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  
 function endTrialAfterDuration() {
     jsPsych.finishTrial(); //Check this in v8
 }
