@@ -59,15 +59,21 @@ async function runExperiment( ) {
             // console.log("ID-----------",subject_id)
             if (!(subject_id === undefined || subject_id === null || subject_id === "")) {
                 // console.log("savenow-----------")
-                // fetch(`https://jspsych-backend.onrender.com/submit?subject_id=${subject_id}`, {
-                fetch(`https://script.google.com/macros/s/AKfycbzlC1DCArBtFr9U-x9K7072RwJ2yfa2Ay9i3DY5mNckbIwEzoQoDtM5owlzfPWlZxoI/exec?subject_id=${subject_id}`, {
-                    method: "POST",
-                    // mode: "no-cors",
-                    body: jsPsych.data.get().csv(),
-                    headers: {
-                        "Content-Type": "text/plain"
-                    }
-                    });
+                db.collection("experiment_data")
+                .doc(subject_id)
+                .collection("trials")
+                .add({
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                  trial_data: data
+                })
+                .then(() => {
+                  console.log("Trial data saved");
+                })
+                .catch((error) => {
+                  console.error("Error saving trial data:", error);
+                });
+            } else {
+                console.error("No subj_id found")
             }
         },
 
