@@ -1,23 +1,13 @@
 
 
-var cssRules = `
-/* Hide the Continue button */
-.jspsych-btn {
-display: none !important;
-margin: 0 auto;
-}
 
-.jspsych-html-button-response-button .jspsych-btn {
-display: block !important; /* or 'inline-block', 'flex', etc. */
-}
-`;
 
 const picdir = "images/"
 const codeversion_begins = 2;//!! v2= render backend!!
 
 const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
 
-
+// console.log("newtry__________")
 var is_debug = true //!!
 console.log("is_debug:", is_debug)
 const is_inst_fullscreen = true;//!!
@@ -30,8 +20,8 @@ const condi='r';
 console.log("current condition:", condi)
 var num_trials_useddebug = 1;//number of tirals show in intial test
 let lastActivityTime = Date.now();
-var styleElement = document.createElement('style');
-styleElement.appendChild(document.createTextNode(cssRules));
+// var styleElement = document.createElement('style');
+// document.head.appendChild(styleElement);
 
 const trialDurationLimit = 1000;
 const num_tottest_finaltest = 492;

@@ -24,7 +24,11 @@ function JT(jsPsych, x) {
     return jsPsych.timelineVariable(x);
   }
 
-
+  function cleanData(data) {
+    return JSON.parse(
+      JSON.stringify(data, (key, value) => (value === undefined ? null : value))
+    );
+  }
 
 
 

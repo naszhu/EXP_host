@@ -10,7 +10,7 @@
  * !! The final test instrucitons were wrong
  * 
  * 
- * 
+ * subject_id
  */
 
 // // Add version log information to the data properties
@@ -37,10 +37,11 @@ async function runExperiment( ) {
     await preloadExperimentFiles();
 
 
+    let isFirstTrial = true;
 
     
     var jsPsych = initJsPsych({
-        on_trial_finish: function(data){
+        on_trial_finish: async function(data){
             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
             if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest") {
                 jsPsych.data.addProperties({
@@ -49,32 +50,89 @@ async function runExperiment( ) {
             data.width =  window.innerWidth;
             data.height = window.innerHeight;
 
-            const parms = new URLSearchParams(window.location.search);
-            var subject_id = parms.get('subject_id');
-            if (subject_id !== undefined){
-                subject_id = data.id;
-                // console.log("dataid-----------",data.id)
+            // const parms = new URLSearchParams(window.location.search);
+            // var subject_id = parms.get('subject_id');
+            // if (subject_id !== undefined){
+            //     subject_id = data.id;
+            //     console.log("dataid-----------",data.id)
+            // }
+            
+            var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
+            // if (!participantId){
+            if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
+
+                participantId = jsPsych.data.get().last(1).select('id').values[0]; 
+            }
+
+                // const participantRef = collection('participants').doc(participantId);
+                
+                // participantRef.set({
+                //     trials: firebase.firestore.FieldValue.arrayUnion(trialData)
+                //   }, { merge: true })
+                //   .then(() => {
+                //     console.log("Data saved for participant " + participantId);
+                //   })
+                //   .catch((error) => {
+                //     console.error("Error saving data: ", error);
+                //   });
+
+if (participantId){
+    try {
+        // console.log("PID           ",participantId)
+        const cleanedData = cleanData(jsPsych.data.get().last(1).values()[0]);
+
+        const participantRef = doc(db, 'participants', participantId);
+
+
+        const trialData = {
+            subject_id: participantId,
+            trial_data: cleanedData // the whole trial data
+        };
+        // console.log("       PIss",participantId,trialData)
+
+        try {
+
+            if (data.trial_index<=2){
+                await setDoc(participantRef, {
+
+                    trial_data: [trialData], // Replace with actual trial data
+                    timestamp: serverTimestamp()
+                  });
+                
+                  isFirstTrial = false;
+            }else{
+                console.log("addtodoc now")
+                docRef = await updateDoc(participantRef, {
+
+                    // trial_data: trialData, // Replace with actual trial data
+                    trial_data: arrayUnion(trialData), // Replace with actual trial data
+                    timestamp: serverTimestamp()
+                  });
             }
             
-            // console.log("ID-----------",subject_id)
-            if (!(subject_id === undefined || subject_id === null || subject_id === "")) {
-                // console.log("savenow-----------")
-                db.collection("experiment_data")
-                .doc(subject_id)
-                .collection("trials")
-                .add({
-                  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                  trial_data: data
-                })
-                .then(() => {
-                  console.log("Trial data saved");
-                })
-                .catch((error) => {
-                  console.error("Error saving trial data:", error);
-                });
-            } else {
-                console.error("No subj_id found")
-            }
+            // docRef = await setDoc(participantRef, cleanedData);
+
+            console.log('Document written with ID: ', participantRef.id);
+          } catch (e) {
+
+            console.error('Error adding document: ', e);
+          }
+
+
+        // console.log('Document written with ID: ', docRef.id);
+        } catch (e) {
+
+            console.error('Error adding document: ', e);
+    }
+}
+                  
+                
+
+
+            // }
+
+
+
         },
 
         on_finish: function() {
