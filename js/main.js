@@ -41,49 +41,130 @@ async function runExperiment( ) {
 
     
     var jsPsych = initJsPsych({
-        on_finish: function(){
+        on_finish: async function(){
+            
             lasttestpos = jsPsych.data.get().select("testPos_final").values;
-            console.log(jsPsych.data.get())
+            console.log("bbbbbbbbbbbbbbbbbgin on_finish",jsPsych.data.get())
             console.log(lasttestpos)
             
-            
-            if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
+            // if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
+            if (true) { 
                 
-                const countdownDuration = 3; // seconds
-                let countdown = countdownDuration;
+
+                var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
+                // if (!participantId){
+                if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
+    
+                    participantId = jsPsych.data.get().last(1).select('id').values[0]; 
+                }    
+
+
+                // console.log("nnnnnnnot if",participantId,jsPsych.data.get().last(1))
+
+                if (typeof participantId !== 'undefined' || !participantId){
+                    // console.log("aaaaaaaaaaaaafter_if",participantId)
+                    try {
+                        // 1. Get ALL final data
+                        // console.log("tttttttttry",participantId)
+                        const allTrialDataObjects = jsPsych.data.get().trials;
+
+
+                        // console.log(`onExperimentFinishFinalSave: Found ${allTrialDataObjects.length} total final trials to save.`);
                 
-                const countdownInterval = setInterval(() => {
-                    if (countdown > 0) {
-                        const countdownElement = document.createElement('div');
-                        countdownElement.style.position = 'fixed';
-                        countdownElement.style.top = '50%';
-                        countdownElement.style.left = '50%';
-                        countdownElement.style.transform = 'translate(-50%, -50%)';
-                        countdownElement.style.fontSize = '20px';
-                        countdownElement.style.color = 'black';
-                        countdownElement.style.backgroundColor = 'white';
-                        countdownElement.style.padding = '10px';
-                        countdownElement.style.border = '1px solid black';
-                        countdownElement.style.textAlign = 'center';
-                        countdownElement.innerText = `Redirecting to Google in ${countdown} second(s)...`;
-                        document.body.appendChild(countdownElement);
-                        
-                        countdown--;
-                        if (countdown < 0) {
-                            document.body.removeChild(countdownElement);
-                        }
-                    } else {
-                        console.log("sucess!!")
-                        clearInterval(countdownInterval);
-                        window.location = confirmid;
+                        // 2. Define the NEW TOP-LEVEL collection and subcollection reference for FINAL data
+                        const finalCollectionName = 'participants_finished'; // New top-level collection
+                        const finalSubcollectionName = 'final_trials'; // Subcollection within the new structure
+                        const finalTrialsCollectionRef = collection(db, finalCollectionName, participantId, finalSubcollectionName);
+                        const finalSavePath = `${finalCollectionName}/${participantId}/${finalSubcollectionName}`;
+                                      
+                        // 3. Ensure the parent document in the new collection exists (optional, but good practice)
+                        //    We can store some summary info here.
+                        const finalParticipantDocRef = doc(db, finalCollectionName, participantId);
+                        await setDoc(finalParticipantDocRef, {
+                             subject_id: participantId,
+                             final_save_initiated: serverTimestamp(),
+                             total_trials_in_final_data: allTrialDataObjects.length,
+                             time_used_total: (Date.now()-lastActivityTime)/1000/60
+                             // Add any other summary fields if needed
+                        }, { merge: true }); // Use merge to create or update
+                
+
+                        // console.log(`onExperimentFinishFinalSave: Saving final data to path: ${finalSavePath}`);
+                        // console.log("TTTTTTTTDDDDDDDDDDDd",allTrialDataObjects)
+                        // 4. Loop through each final trial object and save it as a new document in the FINAL subcollection
+                        let finalTrialsSavedCount = 0;
+                        for (const rawTrialData of allTrialDataObjects) {
+
+                            // console.log("RRRRRRRRAWWWWWWWWWd",rawTrialData)
+                            if (typeof rawTrialData !== 'object' || rawTrialData === null) {
+                                console.warn("onExperimentFinish: Skipping non-object item found in data array:", rawTrialData);
+                                continue;
+                            }
+                            
+
+                             try {
+                                
+                                // Make a copy and clean
+                                const cleanedTrialData = replaceUndefinedWithNull({ ...rawTrialData });
+                                // console.log("RRRRRRRRAWWWWWWWWWd",cleanedTrialData)
+        
+                                 // Add the trial data as a new document in the FINAL subcollection
+                                await addDoc(finalTrialsCollectionRef, cleanedTrialData);
+                                finalTrialsSavedCount++;
+                
+                             } catch (trialSaveError) {
+                                 console.error(`onExperimentFinishFinalSave: Error saving individual final trial (index ${rawTrialData?.trial_index}):`, trialSaveError);
+                             }
+                        } // End loop
+                
+                        console.log(`onExperimentFinishFinalSave: Successfully attempted to save ${finalTrialsSavedCount} final trials out of ${allTrialDataObjects.length}.`);
+                
+                    } catch (e) {
+                        console.error("onExperimentFinishFinalSave: A critical error occurred during the final save process:", e);
                     }
-                }, 1000);
+                     console.log("--- onExperimentFinishFinalSave finished ---");
+                    
+                }
+
+
+
+                // const countdownDuration = 3; // seconds
+                // let countdown = countdownDuration;
+                
+                // const countdownInterval = setInterval(() => {
+                //     if (countdown > 0) {
+                //         const countdownElement = document.createElement('div');
+                //         countdownElement.style.position = 'fixed';
+                //         countdownElement.style.top = '50%';
+                //         countdownElement.style.left = '50%';
+                //         countdownElement.style.transform = 'translate(-50%, -50%)';
+                //         countdownElement.style.fontSize = '20px';
+                //         countdownElement.style.color = 'black';
+                //         countdownElement.style.backgroundColor = 'white';
+                //         countdownElement.style.padding = '10px';
+                //         countdownElement.style.border = '1px solid black';
+                //         countdownElement.style.textAlign = 'center';
+                //         countdownElement.innerText = `Redirecting to Prolific Confirmation Page in ${countdown} second(s)...`;
+                //         document.body.appendChild(countdownElement);
+                        
+                //         countdown--;
+                //         if (countdown < 0) {
+                //             document.body.removeChild(countdownElement);
+                //         }
+                //     } else {
+                //         console.log("sucess!!")
+                //         clearInterval(countdownInterval);
+                //         window.location = confirmid;
+                //     }
+                // }, 1000);
+
+
             }
         },
 
         on_trial_finish: async function onTrialFinish(data) { // Or define it outside and reference it
             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
-            if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest") {
+            if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest" && !is_debug) {
                 jsPsych.data.addProperties({
                     is_finished: 1
             })};
@@ -113,11 +194,11 @@ async function runExperiment( ) {
         
             // 4. Save to Firestore as a NEW document in a subcollection
             if (participantId) {
-                const subcollectionPath = `participants/${participantId}/trials`;
+                // const subcollectionPath = `participants/${participantId}/trials_backup`;
                 // console.log(`onTrialFinish: Preparing to save to path: ${subcollectionPath}`); // DEBUG: Log path
               
                 try {
-                  const trialsCollectionRef = collection(db, 'participants', participantId, 'trials');
+                  const trialsCollectionRef = collection(db, 'participants', participantId, 'trials_backup');
               
                   // --- DEBUG: Log just before adding ---
                 //   console.log("onTrialFinish: Attempting addDoc with data:", cleanedTrialData);
@@ -132,7 +213,7 @@ async function runExperiment( ) {
                   // --- DEBUG: Log any error that occurs during saving ---
                   console.error(`onTrialFinish: Error adding trial document to Firestore for participant ${participantId}:`, e);
                   // Log the data that failed to save might also be helpful
-                  // console.error("onTrialFinish: Data that failed to save:", cleanedTrialData);
+                  console.error("onTrialFinish: Data that failed to save:", cleanedTrialData);
                 }
                 //  console.log("--- onTrialFinish finished ---"); // DEBUG: Check if function completes
                 
@@ -1213,6 +1294,13 @@ var enterid = {
         jsPsych.data.addProperties({
             id: current_id
         });
+        
+        if (!data.subject_id){
+            jsPsych.data.addProperties({
+                subject_id: current_id
+            });
+            console.log("Success save bypass!!")
+        }
         // check below
         if (oldids.includes(current_id)) {
             alert(`
@@ -2023,7 +2111,7 @@ var final_instruction = {
     on_finish: function(data){
         jsPsych.data.get().localSave('csv', 'ekstra.csv');
         jsPsych.endExperiment();
-                // jsPsych.endExperiment();
+        // jsPsych.endExperiment();
             }
         }
     // timeline.push(final_instruction)
