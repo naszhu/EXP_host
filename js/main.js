@@ -41,99 +41,45 @@ async function runExperiment( ) {
 
     
     var jsPsych = initJsPsych({
-//         on_trial_finish: async function(data){
-//             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
-//             if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest") {
-//                 jsPsych.data.addProperties({
-//                     is_finished: 1
-//             })};
-//             data.width =  window.innerWidth;
-//             data.height = window.innerHeight;
-
-//             // const parms = new URLSearchParams(window.location.search);
-//             // var subject_id = parms.get('subject_id');
-//             // if (subject_id !== undefined){
-//             //     subject_id = data.id;
-//             //     console.log("dataid-----------",data.id)
-//             // }
+        on_finish: function(){
+            lasttestpos = jsPsych.data.get().select("testPos_final").values;
+            console.log(jsPsych.data.get())
+            console.log(lasttestpos)
             
-//             var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
-//             // if (!participantId){
-//             if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
-
-//                 participantId = jsPsych.data.get().last(1).select('id').values[0]; 
-//             }
-
-//                 // const participantRef = collection('participants').doc(participantId);
-                
-//                 // participantRef.set({
-//                 //     trials: firebase.firestore.FieldValue.arrayUnion(trialData)
-//                 //   }, { merge: true })
-//                 //   .then(() => {
-//                 //     console.log("Data saved for participant " + participantId);
-//                 //   })
-//                 //   .catch((error) => {
-//                 //     console.error("Error saving data: ", error);
-//                 //   });
-
-// if (participantId){
-//     try {
-//         // console.log("PID           ",participantId)
-//         const cleanedData = cleanData(jsPsych.data.get().last(1).values()[0]);
-
-//         const participantRef = doc(db, 'participants', participantId);
-
-
-//         const trialData = {
-//             subject_id: participantId,
-//             trial_data: cleanedData // the whole trial data
-//         };
-//         // console.log("       PIss",participantId,trialData)
-
-//         try {
-
-//             if (data.trial_index<=2){
-//                 await setDoc(participantRef, {
-
-//                     trial_data: [trialData], // Replace with actual trial data
-//                     timestamp: serverTimestamp()
-//                   });
-                
-//                   isFirstTrial = false;
-//             }else{
-//                 console.log("addtodoc now")
-//                 docRef = await updateDoc(participantRef, {
-
-//                     // trial_data: trialData, // Replace with actual trial data
-//                     trial_data: arrayUnion(trialData), // Replace with actual trial data
-//                     timestamp: serverTimestamp()
-//                   });
-//             }
             
-//             // docRef = await setDoc(participantRef, cleanedData);
-
-//             console.log('Document written with ID: ', participantRef.id);
-//           } catch (e) {
-
-//             console.error('Error adding document: ', e);
-//           }
-
-
-//         // console.log('Document written with ID: ', docRef.id);
-//         } catch (e) {
-
-//             console.error('Error adding document: ', e);
-//     }
-// }
-                  
+            if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
                 
-
-
-//             // }
-
-
-
-//         },
+                const countdownDuration = 3; // seconds
+                let countdown = countdownDuration;
+                
+                const countdownInterval = setInterval(() => {
+                    if (countdown > 0) {
+                        const countdownElement = document.createElement('div');
+                        countdownElement.style.position = 'fixed';
+                        countdownElement.style.top = '50%';
+                        countdownElement.style.left = '50%';
+                        countdownElement.style.transform = 'translate(-50%, -50%)';
+                        countdownElement.style.fontSize = '20px';
+                        countdownElement.style.color = 'black';
+                        countdownElement.style.backgroundColor = 'white';
+                        countdownElement.style.padding = '10px';
+                        countdownElement.style.border = '1px solid black';
+                        countdownElement.style.textAlign = 'center';
+                        countdownElement.innerText = `Redirecting to Google in ${countdown} second(s)...`;
+                        document.body.appendChild(countdownElement);
+                        
+                        countdown--;
+                        if (countdown < 0) {
+                            document.body.removeChild(countdownElement);
+                        }
+                    } else {
+                        console.log("sucess!!")
+                        clearInterval(countdownInterval);
+                        window.location = confirmid;
+                    }
+                }, 1000);
+            }
+        },
 
         on_trial_finish: async function onTrialFinish(data) { // Or define it outside and reference it
             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
@@ -168,19 +114,19 @@ async function runExperiment( ) {
             // 4. Save to Firestore as a NEW document in a subcollection
             if (participantId) {
                 const subcollectionPath = `participants/${participantId}/trials`;
-                console.log(`onTrialFinish: Preparing to save to path: ${subcollectionPath}`); // DEBUG: Log path
+                // console.log(`onTrialFinish: Preparing to save to path: ${subcollectionPath}`); // DEBUG: Log path
               
                 try {
                   const trialsCollectionRef = collection(db, 'participants', participantId, 'trials');
               
                   // --- DEBUG: Log just before adding ---
-                  console.log("onTrialFinish: Attempting addDoc with data:", cleanedTrialData);
+                //   console.log("onTrialFinish: Attempting addDoc with data:", cleanedTrialData);
               
                   // 5. Add the cleaned data as a new document
                   const docRef = await addDoc(trialsCollectionRef, cleanedTrialData);
               
                   // --- DEBUG: Log success ---
-                  console.log(`onTrialFinish: Trial data saved successfully. New trial doc ID: ${docRef.id}`);
+                //   console.log(`onTrialFinish: Trial data saved successfully. New trial doc ID: ${docRef.id}`);
               
                 } catch (e) {
                   // --- DEBUG: Log any error that occurs during saving ---
@@ -188,7 +134,7 @@ async function runExperiment( ) {
                   // Log the data that failed to save might also be helpful
                   // console.error("onTrialFinish: Data that failed to save:", cleanedTrialData);
                 }
-                 console.log("--- onTrialFinish finished ---"); // DEBUG: Check if function completes
+                //  console.log("--- onTrialFinish finished ---"); // DEBUG: Check if function completes
                 
                 
                 // window.location = "https://www.google.com";
@@ -196,11 +142,6 @@ async function runExperiment( ) {
 
 
            
-            //Check below
-            if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) {
-                console.log("sucess!!")
-                window.location = confirmid;
-                }
             },
     on_start: function(){
         
