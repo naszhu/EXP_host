@@ -48,7 +48,7 @@ async function runExperiment( ) {
             console.log(lasttestpos)
             
             // if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
-            if (true) { 
+            if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
                 
 
                 var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
