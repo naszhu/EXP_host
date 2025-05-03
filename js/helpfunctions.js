@@ -40,12 +40,14 @@ function createSaveOverlay() {
     const message = document.createElement('p');
     Object.assign(message.style, {
       fontSize: '18px', color: '#333', textAlign: 'center',
-      maxWidth: '300px', margin: '20px'
+      maxWidth: '800px', margin: '20px', whiteSpace: 'normal'   // reset to normal now that we’re using <br>
     });
-    message.innerText =
-      'Saving data... This can take up to ~30 seconds. ' +
-      'Once done, you will be redirected to the Prolific confirmation page. ' +
-      'You can leave this page open and continue other tasks while waiting.';
+    message.innerHTML =
+    'Saving data... This can take around ~30 seconds.<br>' +
+    'Once done, you will be redirected to the <strong>Prolific confirmation page</strong>.<br>' +
+    'You can leave this page open and continue other tasks while waiting.<br><br><br>' +
+    'If it takes too long to save the data (more than 3 minutes), you can close the window and leave this page.<br>' +
+    'In this way, you will not get a completion code, but you can still submit the experiment and be fully compensated.';
   
     // timer
     const timer = document.createElement('p');
