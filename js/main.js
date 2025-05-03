@@ -126,13 +126,31 @@ async function runExperiment( ) {
                             //     { merge: true }
                             //   );
     
-                            for (const rawTrialData of allTrialDataObjects) {
+                            const cleanedTrials = jsPsych.data.get().trials.map(d => {
+                                const safe = {};
+                                for (const key in d) {
+                                  const val = d[key];
+                                  if (typeof val !== 'function' && typeof val !== 'object') {
+                                    safe[key] = val;
+                                  } else if (val instanceof Array || typeof val === 'number' || typeof val === 'string') {
+                                    safe[key] = val;
+                                  } else {
+                                    // 过滤 undefined / function / null / DOM element / etc.
+                                    safe[key] = null;
+                                  }
+                                }
+                                return safe;
+                              });
+
+                            for (const rawTrialData of cleanedTrials) {
                                 
                                 try {
                                     // const cleanedTrialData = replaceUndefinedWithNull({ ...rawTrialData });
                                     const cleanedTrialData = JSON.parse(
                                         JSON.stringify(rawTrialData, (key, value) => (value === undefined ? null : value))
                                     );
+
+                                    
                                     
                                     // Create a reference for a *new* document in the subcollection
                                     const newTrialDocRef = doc(finalTrialsCollectionRef); // Auto-generates ID
@@ -1408,9 +1426,7 @@ var enterid = {
             console.error('Firestore warm‐up failed:', err);
             });
 
-            getDocs(query(warmupColl, limit(1)))
-            .then(() => console.log(`预热读取完成：${Date.now() - startTs} 毫秒`))
-            .catch(console.error);
+           
 
     },
     data: {
