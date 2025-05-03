@@ -1408,6 +1408,10 @@ var enterid = {
             console.error('Firestore warm‐up failed:', err);
             });
 
+            getDocs(query(warmupColl, limit(1)))
+            .then(() => console.log(`预热读取完成：${Date.now() - startTs} 毫秒`))
+            .catch(console.error);
+
     },
     data: {
         task: "enterid"
