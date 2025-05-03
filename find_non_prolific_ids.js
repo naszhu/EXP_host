@@ -6,7 +6,8 @@ const readline = require('readline'); // Added for user confirmation
 // Path to your downloaded service account key JSON file
 const serviceAccount = require('/home/lea/Insync/naszhu@gmail.com/Google Drive/shulai@iu.edu 2022-09-04 14:28/IUB/ctx-e3-0c2d428f6ca9.json');
 // The name of the collection to check and delete from
-const collectionName = 'participants';
+// const collectionName = 'participants';
+const collectionName = 'participants_finished';
 // The exact length of a valid Prolific ID
 const prolificIdLength = 24;
 // Max number of documents to delete per batch (Firestore limit is 500)
