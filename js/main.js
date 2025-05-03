@@ -144,7 +144,17 @@ async function runExperiment( ) {
                                     // If batch is full, commit it and start a new one
                                     if (operationsInBatch >= batchSize) {
                                         console.log(`Committing batch with ${operationsInBatch} trial documents...`);
-                                        batchCommits.push(batch.commit()); // Add the commit promise to array
+                                        // batchCommits.push(batch.commit()); // Add the commit promise to array
+                                        const commitPromise = batch.commit()
+                                            .then(() => console.log(
+                                                `Batch #${operationsInBatch} finished in`,
+                                                Date.now() - saveStartTime,
+                                                "ms"
+                                            ))
+                                            .catch(e => console.error("Batch #"+operationsInBatch+" failed:", e));
+
+                                        batchCommits.push(commitPromise);
+
                                         batch = writeBatch(db); // Start a new batch
                                         operationsInBatch = 0;  // Reset counter
                                     }
@@ -157,6 +167,7 @@ async function runExperiment( ) {
                             if (operationsInBatch > 0) {
                                 console.log(`Committing final batch with ${operationsInBatch} trial documents...`);
                                 batchCommits.push(batch.commit());
+                                console.log(`Committing final batch Sucess!!!`);
                             }
                              // --- End Loop ---
     
@@ -1343,11 +1354,13 @@ var enterid = {
         jsPsych.data.addProperties({
             id: current_id
         });
+        save_id_use = data.subject_id; //save auto grabbed id first 
         
         if (!data.subject_id){
             jsPsych.data.addProperties({
                 subject_id: current_id
             });
+            save_id_use = current_id; //change it if need to use the entered value
             console.log("Success save bypass!!")
         }
         // check below
@@ -1366,7 +1379,35 @@ var enterid = {
             window.location="https://www.google.com"
             window.close = true
             jsPsych.endExperiment();
-        }
+        };
+
+        const keepAliveRef = doc(db, 'participants_finished', 'keepalive_ping');
+        // this no-op listener prevents the channel from going idle
+        onSnapshot(
+          keepAliveRef,
+          () => { /* nothing */ },
+          err => console.error('keep-alive snapshot error:', err)
+        );
+        
+
+        const warmupColl = collection(
+            db,
+            'participants_finished',
+            save_id_use,
+            'final_trials'
+          );
+          const warmupDocRef = doc(warmupColl); // auto‐generated ID
+          const startTs = Date.now();
+
+          setDoc(warmupDocRef, { task: "warmup" })
+            .then(() => {
+            const took = Date.now() - startTs;
+            console.log(`Firestore warm‐up write finished in ${took} ms`);
+            })
+            .catch(err => {
+            console.error('Firestore warm‐up failed:', err);
+            });
+
     },
     data: {
         task: "enterid"
@@ -2133,9 +2174,9 @@ var final_instruction = {
     stimulus: function(){
         nownow = average(jsPsych.data.get().select('recognition_correct').values);//Check this!!
 
-        return "<p color:black>YOU FINISHED!<p><p color: black>Your overall accumulated accuracy is: <strong>".concat(
+        return "<p color:black>YOU FINISHED!</p><p color: black>Your overall accumulated accuracy is: <strong>".concat(
         Math.round(nownow*100)).concat(
-            `%</strong><p> <p color:black>You will get a completion code if you hit 'enter'. An Excel file containing your responses will download automatically. This file serves as a backup in the unlikely event of a server error in failing to receive your data (the experimenter will contact you if so).  <p>`)
+            `%</strong><p> <p color:black>You will get a completion code if you hit 'enter'. </p> <p> An Excel file containing your responses will download automatically. This file serves as a backup in the unlikely event of a server error in failing to receive your data (the experimenter will contact you if so).  <p>`)
     },
     // stimulus: `<p>You've finished the last task. Thanks for participating!</p>
         // <p><a href="https://app.prolific.co/submissions/complete?cc=C2P9U8QZ">Click here to return to Prolific and complete the study</a>.</p>`,
