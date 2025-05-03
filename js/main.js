@@ -40,7 +40,7 @@ async function runExperiment( ) {
 
     
     var jsPsych = initJsPsych({
-        on_trial_finish: function(data){
+        on_trial_finish:  function(data){
             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
             if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest") {
                 jsPsych.data.addProperties({
@@ -49,14 +49,89 @@ async function runExperiment( ) {
             data.width =  window.innerWidth;
             data.height = window.innerHeight;
         },
-        on_finish: function() {
+        on_finish: async function() {
             
             lasttestpos = jsPsych.data.get().select("testPos_final").values;
             console.log(jsPsych.data.get())
             console.log(lasttestpos)
 
 
-            if (lasttestpos[lasttestpos.length-1]===num_tottest_finaltest) { 
+
+
+            console.log("--- onExperimentFinishSendFinalData triggered ---");
+
+    // --- IMPORTANT: Replace with YOUR Render app's URL ---
+    // --- Make sure this points to the NEW endpoint ---
+
+    const renderFinalDataUrl = "https://jspsych-backend.onrender.com/save-final-data"; // <<<--- Use your actual Render URL
+    // Example: const renderFinalDataUrl = "https://jspsych-data-saver.onrender.com/save-final-data";
+    // ---
+    participantId = jsPsych.data.get().select("subject_id").values
+    // const data = jsPsych.data.get().trials;
+
+    // Ensure participantId is accessible
+    if (typeof participantId === 'undefined' || !participantId) {
+        console.error("onExperimentFinishSendFinalData Error: participantId is missing!");
+        jsPsych.endExperiment("Could not identify participant. Final data not saved.", "participantId_missing_final");
+        participantId = "testid";
+        return;
+    }
+
+    participantId="testid"
+    console.log(`onExperimentFinishSendFinalData: Preparing final data for participantId = ${participantId}`);
+
+    // Display saving message
+    jsPsych.getDisplayElement().innerHTML = '<p>Finalizing and saving data... Please wait.</p>';
+
+    try {
+        // 1. Get ALL final data collected by jsPsych
+        const allTrialDataObjects = jsPsych.data.get().values();
+        if (!Array.isArray(allTrialDataObjects)) {
+             console.error("onExperimentFinishSendFinalData Error: jsPsych data.values() did not return an array!");
+             jsPsych.endExperiment("Error collecting final data. Data not saved.", "final_data_collection_error");
+             return;
+        }
+        console.log(`onExperimentFinishSendFinalData: Found ${allTrialDataObjects.length} total final trials to send.`);
+
+        // 2. Prepare the payload: participantId and the array of trial data
+        const payload = {
+            participantId: participantId,
+            allTrialData: allTrialDataObjects // Send the full array
+        };
+
+        // 3. Send data to the NEW Render backend endpoint
+        console.log(`onExperimentFinishSendFinalData: Sending data to ${renderFinalDataUrl}`);
+        const response = await fetch(renderFinalDataUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // 4. Handle the response
+        if (response.ok) {
+            const result = await response.json();
+            console.log("onExperimentFinishSendFinalData: Success response from server:", result);
+             jsPsych.getDisplayElement().innerHTML = '<p>Data saved successfully! Thank you.</p>';
+             // Optional: Redirect after delay
+             // setTimeout(() => { window.location.href = 'completion_page.html'; }, 2000);
+        } else {
+            const errorResult = await response.text();
+            console.error(`onExperimentFinishSendFinalData: Error response from server (${response.status}):`, errorResult);
+             jsPsych.endExperimentExperiment(`Error saving final data (${response.status}). Please contact the researcher.`, `final_server_error_${response.status}`);
+             jsPsych.getDisplayElement().innerHTML = `<p>Error saving final data (Code: ${response.status}). Please contact the researcher.</p><p>${errorResult}</p>`;
+        }
+
+    } catch (error) {
+        console.error("onExperimentFinishSendFinalData: Network error or issue sending final data:", error);
+         jsPsych.endExperiment("Network error saving final data. Please check connection and contact the researcher.", "final_network_error");
+         jsPsych.getDisplayElement().innerHTML = `<p>Network error saving final data. Please check your internet connection and contact the researcher.</p>`;
+    }
+     console.log("--- onExperimentFinishSendFinalData finished ---");
+
+     lasttestpos = jsPsych.data.get().select("testPos_final").values;
+     if (lasttestpos.includes(num_tottest_finaltest)) { 
 
                 const countdownDuration = 3; // seconds
                 let countdown = countdownDuration;
@@ -1972,13 +2047,13 @@ var final_instruction = {
         jsPsych.data.get().localSave('csv', 'ekstra.csv');
         jsPsych.endExperiment();
 
-        fetch('https://jspsych-backend.onrender.com/submit', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(jsPsych.data.get().json())
-        });
+        // fetch('https://jspsych-backend.onrender.com/submit', {
+        // method: 'POST',
+        // headers: {
+        //     'Content-Type': 'application/json'
+        // },
+        // body: JSON.stringify(jsPsych.data.get().json())
+        // });
                 // jsPsych.endExperiment();
             }
         }
