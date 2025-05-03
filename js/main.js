@@ -48,8 +48,8 @@ async function runExperiment( ) {
             console.log(lasttestpos, num_tottest_finaltest,lasttestpos.includes(num_tottest_finaltest))
             
 
-            // if (lasttestpos.includes(num_tottest_finaltest)) { 
-                if (true) { 
+            if (lasttestpos.includes(num_tottest_finaltest)) { 
+                // if (true) { 
                 
 
                     // --->>> 1. Record Start Time & Show Indicator <<<---
@@ -79,28 +79,13 @@ async function runExperiment( ) {
                             // console.log(`onExperimentFinishFinalSave: Found ${allTrialDataObjects.length} total final trials to save.`);
                             
                             // 2. Define the NEW TOP-LEVEL collection and subcollection reference for FINAL data
-                            // Assuming 'db', 'participantId', 'allTrialDataObjects', 'serverTimestamp',
-                            // 'replaceUndefinedWithNull', 'lastActivityTime' are defined.
                             
                             const finalCollectionName = 'participants_finished';
                             const finalSubcollectionName = 'final_trials';
                             // Reference to the SUBCOLLECTION where trials will be saved
                             const finalTrialsCollectionRef = collection(db, finalCollectionName, participantId, finalSubcollectionName);
                             
-                            // 1. Save the summary data first (optional, can be done before/after batch)
-                            // const finalParticipantDocRef = doc(db, finalCollectionName, participantId);
-                            // try {
-                            //     await setDoc(finalParticipantDocRef, {
-                            //         subject_id: participantId,
-                            //         final_save_initiated: serverTimestamp(),
-                            //         total_trials_in_final_data: allTrialDataObjects.length, // Placeholder count
-                            //         time_used_total: (Date.now() - lastActivityTime) / 1000 / 60
-                            //     }, { merge: true });
-                            // } catch (summaryError) {
-                            //     console.error("Error saving summary document:", summaryError);
-                            //     // Decide if you want to proceed with trial data if summary fails
-                            // }
-                            
+                    
                             
                             // --->>> 2. FIRESTORE BATCH SAVE LOGIC (as before) <<<---
                             console.log(`Preparing to save ${allTrialDataObjects.length} trials in batches...`);
@@ -113,36 +98,8 @@ async function runExperiment( ) {
                             const batchCommits = []; // To store promises of batch commits
     
         
-    
-                            // const cleanedTrialData_arr = allTrialDataObjects.map(rawTrialData=>{
-                            //     JSON.parse(
-                            //         JSON.stringify(rawTrialData, (key, value) => (value === undefined ? null : value)))
-                            // })
-    
-                            
-                            // await setDoc(
-                            //     doc(db, 'participants_final', participantId),
-                            //     { trials: cleanedTrialData_arr, finished_at: serverTimestamp() },
-                            //     { merge: true }
-                            //   );
-    
-                            const cleanedTrials = jsPsych.data.get().trials.map(d => {
-                                const safe = {};
-                                for (const key in d) {
-                                  const val = d[key];
-                                  if (typeof val !== 'function' && typeof val !== 'object') {
-                                    safe[key] = val;
-                                  } else if (val instanceof Array || typeof val === 'number' || typeof val === 'string') {
-                                    safe[key] = val;
-                                  } else {
-                                    // 过滤 undefined / function / null / DOM element / etc.
-                                    safe[key] = null;
-                                  }
-                                }
-                                return safe;
-                              });
 
-                            for (const rawTrialData of cleanedTrials) {
+                            for (const rawTrialData of allTrialDataObjects) {
                                 
                                 try {
                                     // const cleanedTrialData = replaceUndefinedWithNull({ ...rawTrialData });
@@ -210,13 +167,6 @@ async function runExperiment( ) {
                             const saveDurationMs = saveEndTime - saveStartTime; // Duration in milliseconds
                             console.log(`Total save function duration (including waiting indicator): ${saveDurationMs} ms`);
     
-                            // Perform the update operation to add the duration
-                            // await updateDoc(finalParticipantDocRef, {
-                            //     final_save_duration_ms: saveDurationMs,
-                            //     final_save_client_end_ts: saveEndTime, // Optionally store end timestamp
-                            //     total_trials_saved_successfully: trialsSavedCount // Update final count
-                            // });
-                            // console.log("Successfully updated summary document with save duration.");
                             
                             /////////////end save; close notification window below
                             
@@ -1399,7 +1349,13 @@ var enterid = {
             jsPsych.endExperiment();
         };
 
-        const keepAliveRef = doc(db, 'participants_finished', 'keepalive_ping');
+        const warmupColl = collection(
+            db,
+            'participants_finished',
+            save_id_use,
+            'final_trials'
+          );
+        const keepAliveRef = doc(warmupColl);
         // this no-op listener prevents the channel from going idle
         onSnapshot(
           keepAliveRef,
@@ -1408,12 +1364,6 @@ var enterid = {
         );
         
 
-        const warmupColl = collection(
-            db,
-            'participants_finished',
-            save_id_use,
-            'final_trials'
-          );
           const warmupDocRef = doc(warmupColl); // auto‐generated ID
           const startTs = Date.now();
 

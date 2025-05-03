@@ -135,7 +135,7 @@
 
         document.body.style.backgroundColor = "white";
         var styleElement = document.createElement('style');
-        // styleElement.appendChild(document.createTextNode(cssRules));
+        styleElement.appendChild(document.createTextNode(cssRules));
         document.head.appendChild(styleElement);
 
         console.log("Firebase initialized. Starting experiment...");
