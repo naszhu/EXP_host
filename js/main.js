@@ -48,8 +48,8 @@ async function runExperiment( ) {
             console.log(lasttestpos, num_tottest_finaltest,lasttestpos.includes(num_tottest_finaltest))
             
 
-            if (lasttestpos.includes(num_tottest_finaltest)) { 
-                // if (true) { 
+            // if (lasttestpos.includes(num_tottest_finaltest)) { 
+                if (true) { 
                 
 
                     // --->>> 1. Record Start Time & Show Indicator <<<---
@@ -70,6 +70,10 @@ async function runExperiment( ) {
                     
                     if   (participantId){
                         console.log("aaaaaaaaaaaaafter_if",participantId)
+                        var saveDurationMs = 0;
+                        var saveEndTime = 0;
+                        const finalCollectionName = 'participants_finished';
+                        
                         try {
                             // 1. Get ALL final data
                             console.log("tttttttttry",participantId)
@@ -84,8 +88,7 @@ async function runExperiment( ) {
                             const finalSubcollectionName = 'final_trials';
                             // Reference to the SUBCOLLECTION where trials will be saved
                             const finalTrialsCollectionRef = collection(db, finalCollectionName, participantId, finalSubcollectionName);
-                            
-                    
+                        
                             
                             // --->>> 2. FIRESTORE BATCH SAVE LOGIC (as before) <<<---
                             console.log(`Preparing to save ${allTrialDataObjects.length} trials in batches...`);
@@ -163,8 +166,8 @@ async function runExperiment( ) {
                             }
                             
                             // --->>> 3. Calculate Duration & Update Summary Document <<<---
-                            const saveEndTime = Date.now();
-                            const saveDurationMs = saveEndTime - saveStartTime; // Duration in milliseconds
+                            saveEndTime = Date.now();
+                            saveDurationMs = saveEndTime - saveStartTime; // Duration in milliseconds
                             console.log(`Total save function duration (including waiting indicator): ${saveDurationMs} ms`);
     
                             
@@ -175,6 +178,49 @@ async function runExperiment( ) {
                             console.error("onExperimentFinishFinalSave: A critical error occurred during the final save process:", e);
                         }
                         console.log("--- onExperimentFinishFinalSave finished ---");
+
+
+                        //  1. Save the summary data first (optional, can be done before/after batch)
+                            const finalParticipantDocRef = doc(db, finalCollectionName, participantId);
+                            try {
+                                await setDoc(finalParticipantDocRef, {
+                                    subject_id: participantId,
+                                    final_save_initiated: serverTimestamp(),
+                                    // total_trials_in_final_data: allTrialDataObjects.length, // Placeholder count
+                                    time_used_total: (Date.now() - lastActivityTime) / 1000 / 60,
+                                    time_taken_save:  saveDurationMs,
+                                    time_start: lastActivityTime
+                                }, { merge: true });
+                            } catch (summaryError) {
+                                console.error("Error saving summary document:", summaryError);
+                                // Decide if you want to proceed with trial data if summary fails
+                            }
+
+                        // const finalsave = collection(
+                        //     db,
+                        //     'participants_finished',
+                        //     participantId
+                        //   );
+                        // const datasave = {
+                        //     subject_id: participantId, // Good to have the ID here too
+                        //     final_save_timestamp: serverTimestamp() // Add the completion timestamp HERE
+                        //     // Add other summary fields if needed (ensure they are defined!)
+                        //     // Example: total_trials_attempted: allTrialDataObjects.length // Use length if sure it's defined
+                        // };
+
+                        // await addDoc(collection(db, 'participants', participantId, "condition_save"), {if_finished:1, time_takenExp_before_save_min: (saveEndTime-lastActivityTime)/1000/60, time_taken_save:  saveDurationMs, time_start: lastActivityTime, time_now:serverTimestamp() });
+                        // //     // This line will execute only after addDoc is successful
+                        // // console.log("Final final data saving complete!");
+                        // await setDoc(finalsave, datasave, { merge: true })
+                        // .then(() => {
+                        // // const took = Date.now() - startTs;
+                        // console.log(`Firestore finalsave write finished`);
+                        // })
+                        // .catch(err => {
+                        // console.error('Firestore finalsave failed:', err);
+                        // });
+
+
                         
                     }//end if partipcants id; end saving process
                     
