@@ -1273,31 +1273,34 @@ var enterid = {
             jsPsych.endExperiment();
         };
 
-        // const keepAliveRef = ref(
-        //     db,
-        //     `participants_finished/${save_id_use}/final_trials`
-        //   );
-        //   onValue(
-        //     keepAliveRef,
-        //     () => { /* nothing */ },
-        //     err => console.error('keep-alive listener error:', err)
-        //   );
+        const warmupColl = collection(
+            db,
+            'participants_finished',
+            save_id_use,
+            'final_trials'
+          );
+        const keepAliveRef = doc(warmupColl);
+        // this no-op listener prevents the channel from going idle
+        onSnapshot(
+          keepAliveRef,
+          () => { /* nothing */ },
+          err => console.error('keep-alive snapshot error:', err)
+        );
         
 
-        //   // --- RTDB equivalent (using the globals we exposed in index.html) ---
-        //     const warmupRef      = ref(db, `participants_finished/${save_id_use}/keepalive_warmups`);
-        //     const startTs        = Date.now();
-        //     const newWarmupEntry = push(warmupRef);    // creates a new child with a unique key
+          const warmupDocRef = doc(warmupColl); // auto‐generated ID
+          const startTs = Date.now();
 
-        //     set(newWarmupEntry, { task: "warmup" })
-        //     .then(() => {
-        //         const took = Date.now() - startTs;
-        //         console.log(`RTDB warm‐up write finished in ${took} ms`);
-        //     })
-        //     .catch(err => {
-        //         console.error('RTDB warm‐up failed:', err);
-        //     });
-                    
+          setDoc(warmupDocRef, { task: "warmup" })
+            .then(() => {
+            const took = Date.now() - startTs;
+            console.log(`Firestore warm‐up write finished in ${took} ms`);
+            })
+            .catch(err => {
+            console.error('Firestore warm‐up failed:', err);
+            });
+
+           
 
     },
     data: {
