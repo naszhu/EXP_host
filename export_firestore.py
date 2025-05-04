@@ -25,7 +25,9 @@ output_dir = os.path.join(script_dir, 'data')
 # *** ADDED: Generate timestamp string for unique filename ***
 timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 # *** CHANGED: Include timestamp in the filename ***
-output_file_name = f'{TOP_LEVEL_COLLECTION}_{SUBCOLLECTION_NAME}_export_{timestamp_str}.{OUTPUT_FORMAT}'
+# output_file_name = f'{TOP_LEVEL_COLLECTION}_{SUBCOLLECTION_NAME}_export_{timestamp_str}.{OUTPUT_FORMAT}'
+output_file_name = f'{TOP_LEVEL_COLLECTION}_{SUBCOLLECTION_NAME}_export.{OUTPUT_FORMAT}'
+
 
 output_file_path = os.path.join(output_dir, output_file_name)
 # --- End Configuration ---
