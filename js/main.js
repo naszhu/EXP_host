@@ -119,69 +119,63 @@ async function runExperiment( ) {
           },
           
 
-        on_trial_finish: async function onTrialFinish(data) { // Or define it outside and reference it
-            jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
-            if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest" && !is_debug) {
-                jsPsych.data.addProperties({
-                    is_finished: 1
-            })};
-            data.width =  window.innerWidth;
+          on_trial_finish: async function(data) {
+            // 1) Track elapsed experiment time (mins) on every trial
+            jsPsych.data.get().addToLast({
+              timepassed_mins: ((Date.now() - lastActivityTime) / 1000 / 60).toFixed(2)
+            });
+          
+            // 2) Mark “is_finished” once you hit the very last final-test trial
+            const last = jsPsych.data.get().last(1).trials[0];
+            if (
+              last.testPos_final === num_tottest_finaltest &&
+              last.task === "finalTest" &&
+              !is_debug
+            ) {
+              jsPsych.data.addProperties({ is_finished: 1 });
+            }
+          
+            // 3) Record viewport size
+            data.width  = window.innerWidth;
             data.height = window.innerHeight;
-            // 1. Get the raw data for the last trial
-            //    Use jsPsych.data.getLastTrialData() for simplicity if available and suitable,
-            //    or stick to your method if needed. Let's assume 'data' passed in is sufficient.
-            //    Make a copy to avoid modifying the original jsPsych data object.
-            const rawTrialData = { ...data }; // Creates a shallow copy
           
-            // 2. Clean the data: Replace undefined with null
-            // const cleanedTrialData = replaceUndefinedWithNull(rawTrialData);
-            const cleanedTrialData = replaceUndefinedWithNull(rawTrialData);
+            // 4) Clone & clean the trial data
+            const rawTrialData     = { ...data };
+            const cleanedTrialData = JSON.parse(
+              JSON.stringify(rawTrialData, (k, v) => (v === undefined ? null : v))
+            );
           
-            // 3. Add participant ID if it's not already reliably in the trial data
-            var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
-            // if (!participantId){
-            if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
-
-                participantId = jsPsych.data.get().last(1).select('id').values[0]; 
+            // 5) Make sure subject_id is present
+            let participantId = jsPsych.data.get().last(1).select("subject_id").values[0];
+            if (!participantId) {
+              participantId = jsPsych.data.get().last(1).select("id").values[0];
             }
-
-            //    (Often jsPsych adds it automatically, but double-check)
-            if (!cleanedTrialData.subject_id && participantId) {
-                cleanedTrialData.subject_id = participantId;
+            if (participantId && !cleanedTrialData.subject_id) {
+              cleanedTrialData.subject_id = participantId;
             }
-        
-            // 4. Save to Firestore as a NEW document in a subcollection
+          
+            // 6) Send to your Render endpoint (stage1), then return immediately
             if (participantId) {
-                // const subcollectionPath = `participants/${participantId}/trials_backup`;
-                // console.log(`onTrialFinish: Preparing to save to path: ${subcollectionPath}`); // DEBUG: Log path
-              
-                try {
-                //   const trialsCollectionRef = collection(db, 'participants', participantId, 'trials_backup');
-              
-                  // --- DEBUG: Log just before adding ---
-                //   console.log("onTrialFinish: Attempting addDoc with data:", cleanedTrialData);
-              
-                  // 5. Add the cleaned data as a new document
-                //   const docRef = await addDoc(trialsCollectionRef, cleanedTrialData);
-              
-                  // --- DEBUG: Log success ---
-                //   console.log(`onTrialFinish: Trial data saved successfully. New trial doc ID: ${docRef.id}`);
-              
-                } catch (e) {
-                  // --- DEBUG: Log any error that occurs during saving ---
-                  console.error(`onTrialFinish: Error adding trial document to Firestore for participant ${participantId}:`, e);
-                  // Log the data that failed to save might also be helpful
-                  console.error("onTrialFinish: Data that failed to save:", cleanedTrialData);
-                }
-                //  console.log("--- onTrialFinish finished ---"); // DEBUG: Check if function completes
-                
-                
-                // window.location = "https://www.google.com";
+              const saveStart = performance.now();
+              try {
+                fetch("https://jspsych-backend.onrender.com/save-trial-data", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ participantId, trialData: cleanedTrialData })
+                  })
+                    .then(resp => {
+                      if (!resp.ok) return resp.text().then(t => { throw new Error(t) });
+                      console.log(`Trial save ACK in ${Math.round(performance.now() - saveStart)} ms`);
+                    })
+                    .catch(err => {
+                      console.error("Trial save network/error:", err);
+                    });
+                  // no await — code flows straight through to the next trial
+              } catch (err) {
+                console.error("Network error saving trial:", err);
+              }
             }
-
-
-           
-            },
+          },
     on_start: function(){
         
 
