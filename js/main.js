@@ -41,109 +41,83 @@ async function runExperiment( ) {
 
     
     var jsPsych = initJsPsych({
-        on_finish: async function(){
-            
-            lasttestpos = jsPsych.data.get().select("testPos_final").values;
-            console.log("bbbbbbbbbbbbbbbbbgin on_finish",jsPsych.data.get())
-            console.log(lasttestpos, num_tottest_finaltest,lasttestpos.includes(num_tottest_finaltest))
-            
-            if (lasttestpos.includes(num_tottest_finaltest)) { 
-
-                // --->>> 1. Record Start Time & Show Indicator <<<---
-                const saveStartTime = Date.now(); // Record start time for saving duration
-                const overlay = createSaveOverlay();
-
-                // document.body.appendChild(renderwait);
-                
-                var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
-                // if (!participantId){
-                if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
-                    
-                    participantId = jsPsych.data.get().last(1).select('id').values[0]; 
-                }    
-
-                //////////////////////////////////
-                ////////////////START RENDER SAVE
-
-                const renderFinalDataUrl = "https://jspsych-backend.onrender.com/save-final-data"; // <<<--- Use your actual Render URL
-                // const data = jsPsych.data.get().trials;
-
-                // Ensure participantId is accessible
-                if (typeof participantId === 'undefined' || !participantId) {
-                    console.error("onExperimentFinishSendFinalData Error: participantId is missing!");
-                    jsPsych.endExperiment("Could not identify participant. Final data not saved.", "participantId_missing_final");
-                    participantId = "testid";
-                    return;
-                }
-
-                console.log(`onExperimentFinishSendFinalData: Preparing final data for participantId = ${participantId}`);
-
-                // Display saving message
-                // jsPsych.getDisplayElement().innerHTML = '<p>Finalizing and saving data... Please wait.</p>';
-
-                try {
-                    // 1. Get ALL final data collected by jsPsych
-                    const allTrialDataObjects = jsPsych.data.get().values();
-                    if (!Array.isArray(allTrialDataObjects)) {
-                        console.error("onExperimentFinishSendFinalData Error: jsPsych data.values() did not return an array!");
-                        jsPsych.endExperiment("Error collecting final data. Data not saved.", "final_data_collection_error");
-                        return;
-                    }
-                    console.log(`onExperimentFinishSendFinalData: Found ${allTrialDataObjects.length} total final trials to send.`);
-
-                    // 2. Prepare the payload: participantId and the array of trial data
-                    const payload = {
-                        participantId: participantId,
-                        allTrialData: allTrialDataObjects // Send the full array
-                    };
-
-                    // 3. Send data to the NEW Render backend endpoint
-                    console.log(`onExperimentFinishSendFinalData: Sending data to ${renderFinalDataUrl}`);
-                    const response = await fetch(renderFinalDataUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload),
-                    });
-
-                    // 4. Handle the response
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log("onExperimentFinishSendFinalData: Success response from server:", result);
-                        jsPsych.getDisplayElement().innerHTML = '<p>Data saved successfully! Thank you.</p>';
-                        // Optional: Redirect after delay
-                        // setTimeout(() => { window.location.href = 'completion_page.html'; }, 2000);
-                    } else {
-                        const errorResult = await response.text();
-                        console.error(`onExperimentFinishSendFinalData: Error response from server (${response.status}):`, errorResult);
-                        jsPsych.endExperimentExperiment(`Error saving final data (${response.status}). Please contact the researcher.`, `final_server_error_${response.status}`);
-                        jsPsych.getDisplayElement().innerHTML = `<p>Error saving final data (Code: ${response.status}). Please contact the researcher.</p><p>${errorResult}</p>`;
-                    }
-
-                } catch (error) {
-                    console.error("onExperimentFinishSendFinalData: Network error or issue sending final data:", error);
-                    jsPsych.endExperiment("Network error saving final data. Please check connection and contact the researcher.", "final_network_error");
-                    jsPsych.getDisplayElement().innerHTML = `<p>Network error saving final data. Please check your internet connection and contact the researcher.</p>`;
-                }
-                console.log("--- onExperimentFinishSendFinalData finished ---");
-
-
-                /////////////END RENDER SAVE
-                //////////////////////////////
-
-
-                overlay.remove();
-                const countdownDuration = 3; // seconds
-                startCountdown(countdownDuration, confirmid);
-
-            } else {//if a finished test (a save triggered)
-
-                console.log("Test Unfinished!!!")
-            }//end if of lasttestpos.includes(num_tottest_finaltest)
-
-    
-        },
+        on_finish: async function() {
+            // Always run at the end
+            // 1) Show saving overlay & record start time
+            const saveStartTime = Date.now();
+            const overlay = createSaveOverlay();
+          
+            // 2) Determine participantId
+            let participantId = jsPsych.data.get().last(1).select('subject_id').values[0];
+            if (!participantId) {
+              participantId = jsPsych.data.get().last(1).select('id').values[0];
+            }
+            if (!participantId) {
+              overlay.remove();
+              jsPsych.endExperiment("Participant ID missing — cannot save data.");
+              return;
+            }
+          
+            // 3) Gather all trial data
+            const allTrialData = jsPsych.data.get().values();
+          
+            try {
+              // 4) Send everything (including client-measured duration placeholder) in one go
+              //    We'll measure the round-trip and include it in the same payload
+              const response = await fetch("https://jspsych-backend.onrender.com/save-final-data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  participantId,
+                  allTrialData,
+                  // we'll fill this client duration after awaiting the response
+                  saveDurationMs: null
+                })
+              });
+          
+              // 5) Now measure how long the fetch actually took
+              const saveDurationMs = Date.now() - saveStartTime;
+          
+              if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Server ${response.status}: ${errText}`);
+              }
+          
+              // 6) Inform server of actual saveDurationMs by calling the same endpoint with merge
+              //    (index.js is written to pick up saveDurationMs from payload)
+              await fetch("https://jspsych-backend.onrender.com/save-final-data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  participantId,
+                  allTrialData: [],          // skip re–writing trials; index.js will only merge metadata when allTrialData is empty
+                  saveDurationMs
+                })
+              });
+          
+              // 7) Show success message
+              jsPsych.getDisplayElement().innerHTML = `
+                <div class="save-success">
+                  Data saved successfully in ${saveDurationMs} ms. Thank you!
+                </div>
+              `;
+            }
+            catch (err) {
+              console.error("Saving error:", err);
+              jsPsych.getDisplayElement().innerHTML = `
+                <div class="save-error">
+                  Error saving data: ${err.message}
+                </div>
+              `;
+            }
+            finally {
+              overlay.remove();
+              // 8) Countdown then end
+              const countdownDuration = 3;
+              startCountdown(countdownDuration, confirmid);
+            }
+          },
+          
 
         on_trial_finish: async function onTrialFinish(data) { // Or define it outside and reference it
             jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
