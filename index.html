@@ -23,6 +23,14 @@
         <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.1"></script>
         <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0"></script>
                 
+
+        <!-- <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script> -->
+        <!-- <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script> -->
+        <!-- <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script> -->
+
+
+
         <link href="https://unpkg.com/jspsych@7.0.0/css/jspsych.css" rel="stylesheet" type="text/css" />
 
         <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -45,19 +53,92 @@
         <div id="jspsych-target"></div>
 
         <!-- Load your scripts in this exact order -->
-        <script src="js/const_exp.js"></script>     <!-- constants like keys, trial counts -->
+        <!-- <script src="js/const_exp.js"></script>     constants like keys, trial counts -->
         <script src="js/const_general.js"></script>     <!-- constants like keys, trial counts -->
         <script src="js/load.js"></script>          <!-- loads picnames.txt and ps.txt -->
         <script src="js/main.js"></script>          <!-- main experiment timeline -->
         <script src="js/helpfunctions.js"></script>       <!-- functions like shuffle, etc. -->
         
-
+        <!-- still script type="module"  -->
     </body>
-    <script>
+    <!-- <script> -->
+    <script type="module">
+
+        // 🔧 Firebase Config — replace with your actual values from Firebase Console
+        // Import the functions you need from the SDKs you need
         
-        document.head.appendChild(styleElement);
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        // import { getFirestore, doc, setDoc, collection } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        import { getFirestore, collection,arrayUnion, doc,setDoc, addDoc, serverTimestamp, updateDoc, writeBatch, initializeFirestore, onSnapshot} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+
+
+            // Firebase configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyDJjsNIVOBToNDYtOeHPjTo9n9_LcPmQm8",
+                authDomain: "ctx-e3.firebaseapp.com",
+                projectId: "ctx-e3",
+                storageBucket: "ctx-e3.firebasestorage.app",
+                messagingSenderId: "698148278501",
+                appId: "1:698148278501:web:4e9b16ea7fd6f554f8440c",
+                measurementId: "G-3XC7RRXVPT"
+            };
+
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const db = initializeFirestore(app, { experimentalForceLongPolling: true });
+            // const db = getFirestore(app);
+            console.log(db,"????????? ")
+            // try {
+            //     const docRef = await addDoc(collection(db, 'your_collection_name'), {
+            //         field1: 'value1',
+            //         field2: 'value2',
+            //         timestamp: serverTimestamp(),
+            //     });
+            //     console.log('Document written with ID: ', docRef.id);
+            //     } catch (e) {
+            //     console.error('Error adding document: ', e);
+            // }
+                            // Attach Firebase instance to window object for global access
+            window.db = db;
+            window.collection = collection;
+            window.doc = doc;
+            window.addDoc = addDoc;
+            window.setDoc = setDoc;
+            window.updateDoc = updateDoc;
+            window.arrayUnion = arrayUnion;
+            window.writeBatch = writeBatch;
+            window.onSnapshot = onSnapshot;
+            // window.setDoc = docref;
+            window.serverTimestamp = serverTimestamp;
+
+
+    </script>
+
+    <script>
+        // 🎨 Style and experiment start
+        var cssRules = `
+            /* Hide the Continue button */
+            .jspsych-btn {
+            display: none !important;
+            margin: 0 auto;
+            }
+
+            .jspsych-html-button-response-button .jspsych-btn {
+            display: block !important; /* or 'inline-block', 'flex', etc. */
+            }
+        `;
+
         document.body.style.backgroundColor = "white";
-        console.log("hello");
+        var styleElement = document.createElement('style');
+        styleElement.appendChild(document.createTextNode(cssRules));
+        document.head.appendChild(styleElement);
+
+        console.log("Firebase initialized. Starting experiment...");
         runExperiment( )
     </script>
 </html>

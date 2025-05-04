@@ -11,7 +11,134 @@
 //********************************************************************************************************
 // JT = x=>jsPsych.timelineVariable(x);
 // JRR = (x,y)=>jsPsych.randomization.repeat(x,y);
+function createSaveOverlay() {
+    // spinner keyframes
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+  
+    // overlay container
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, {
+      position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+      backgroundColor: 'rgba(255,255,255,0.9)', display: 'flex',
+      flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+      zIndex: '9999'
+    });
+  
+    // spinner
+    const spinner = document.createElement('div');
+    Object.assign(spinner.style, {
+      border: '8px solid #f3f3f3', borderTop: '8px solid #3498db',
+      borderRadius: '50%', width: '60px', height: '60px',
+      animation: 'spin 1s linear infinite'
+    });
+  
+    // message
+    const message = document.createElement('p');
+    Object.assign(message.style, {
+      fontSize: '18px', color: '#333', textAlign: 'center',
+      maxWidth: '800px', margin: '20px', whiteSpace: 'normal'   // reset to normal now that we’re using <br>
+    });
+    message.innerHTML =
+    'Saving data... This can take around ~30 seconds.<br>' +
+    'Once done, you will be redirected to the <strong>Prolific confirmation page</strong>.<br>' +
+    'You can leave this page open and continue other tasks while waiting.<br><br><br>' +
+    'If it takes too long to save the data (more than 3 minutes), you can close the window and leave this page.<br>' +
+    'In this way, you will not get a completion code, but you can still submit the experiment and be fully compensated.';
+  
+    // timer
+    const timer = document.createElement('p');
+    Object.assign(timer.style, { fontSize: '16px', color: '#666' });
+    timer.innerText = 'Elapsed time: 0 seconds';
+  
+    overlay.append(spinner, message, timer);
+    document.body.appendChild(overlay);
+  
+    let sec = 0;
+    const interval = setInterval(() => {
+      sec++;
+      timer.innerText = `Elapsed time: ${sec} seconds`;
+    }, 1000);
+  
+    return {
+      remove() {
+        clearInterval(interval);
+        overlay.remove();
+        style.remove();
+      },
+      getElapsedSeconds() {
+        return sec;
+      }
+    };
+  }
 
+  function startCountdown(duration, confirmUrl) {
+    let remaining = duration;
+    
+    // create countdown element
+    const el = document.createElement('div');
+    Object.assign(el.style, {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      fontSize: '20px',
+      color: 'black',
+      backgroundColor: 'white',
+      padding: '10px',
+      border: '1px solid black',
+      textAlign: 'center',
+      zIndex: '10000'
+    });
+    document.body.appendChild(el);
+    
+    // update loop
+    const intervalId = setInterval(() => {
+      if (remaining > 0) {
+        el.innerText = `Redirecting to Prolific Confirmation Page in ${remaining} second(s)...`;
+        remaining--;
+      } else {
+        clearInterval(intervalId);
+        el.remove();
+        window.location = confirmUrl;
+      }
+    }, 1000);
+    
+    return {
+      cancel() {
+        clearInterval(intervalId);
+        el.remove();
+      }
+    };
+  }
+  
+
+function replaceUndefinedWithNull(obj) {
+    if (obj === undefined) {
+      return null; // Base case: if the object itself is undefined
+    }
+    if (obj === null || typeof obj !== 'object') {
+      return obj; // Return primitives, null, or non-objects as is
+    }
+  
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => replaceUndefinedWithNull(item));
+    }
+  
+    // Handle objects (maps)
+    const newObj = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = replaceUndefinedWithNull(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  
 function endTrialAfterDuration() {
     jsPsych.finishTrial(); //Check this in v8
 }
@@ -24,7 +151,11 @@ function JT(jsPsych, x) {
     return jsPsych.timelineVariable(x);
   }
 
-
+  function cleanData(data) {
+    return JSON.parse(
+      JSON.stringify(data, (key, value) => (value === undefined ? null : value))
+    );
+  }
 
 
 
