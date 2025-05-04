@@ -73,7 +73,9 @@
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
         import 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
-        import { getFirestore, collection,arrayUnion, doc,setDoc, addDoc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+        import { getFirestore, collection,arrayUnion, doc,setDoc, addDoc, serverTimestamp, updateDoc, writeBatch, initializeFirestore, onSnapshot} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+
 
             // Firebase configuration
             const firebaseConfig = {
@@ -88,7 +90,8 @@
 
             // Initialize Firebase
             const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
+            const db = initializeFirestore(app, { experimentalForceLongPolling: true });
+            // const db = getFirestore(app);
             console.log(db,"????????? ")
             // try {
             //     const docRef = await addDoc(collection(db, 'your_collection_name'), {
@@ -108,6 +111,8 @@
             window.setDoc = setDoc;
             window.updateDoc = updateDoc;
             window.arrayUnion = arrayUnion;
+            window.writeBatch = writeBatch;
+            window.onSnapshot = onSnapshot;
             // window.setDoc = docref;
             window.serverTimestamp = serverTimestamp;
 
