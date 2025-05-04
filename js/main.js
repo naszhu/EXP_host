@@ -41,263 +41,141 @@ async function runExperiment( ) {
 
     
     var jsPsych = initJsPsych({
-        on_finish: async function(){
-            
-            lasttestpos = jsPsych.data.get().select("testPos_final").values;
-            console.log("bbbbbbbbbbbbbbbbbgin on_finish",jsPsych.data.get())
-            console.log(lasttestpos, num_tottest_finaltest,lasttestpos.includes(num_tottest_finaltest))
-            
+        on_finish: async function() {
+            // Always run at the end
+            // 1) Show saving overlay & record start time
+            const saveStartTime = Date.now();
+            const overlay = createSaveOverlay();
+          
+            // 2) Determine participantId
+            let participantId = jsPsych.data.get().last(1).select('subject_id').values[0];
+            if (!participantId) {
+              participantId = jsPsych.data.get().last(1).select('id').values[0];
+            }
+            if (!participantId) {
+              overlay.remove();
+              jsPsych.endExperiment("Participant ID missing — cannot save data.");
+              return;
+            }
+          
+            // 3) Gather all trial data
+            const allTrialData = jsPsych.data.get().values();
+          
+            try {
+              // 4) Send everything (including client-measured duration placeholder) in one go
+              //    We'll measure the round-trip and include it in the same payload
+              const response = await fetch("https://jspsych-backend.onrender.com/save-final-data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  participantId,
+                  allTrialData,
+                  // we'll fill this client duration after awaiting the response
+                  saveDurationMs: null
+                })
+              });
+          
+              // 5) Now measure how long the fetch actually took
+              const saveDurationMs = Date.now() - saveStartTime;
+          
+              if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Server ${response.status}: ${errText}`);
+              }
+          
+              // 6) Inform server of actual saveDurationMs by calling the same endpoint with merge
+              //    (index.js is written to pick up saveDurationMs from payload)
+              await fetch("https://jspsych-backend.onrender.com/save-final-data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  participantId,
+                  allTrialData: [],          // skip re–writing trials; index.js will only merge metadata when allTrialData is empty
+                  saveDurationMs
+                })
+              });
+          
+              // 7) Show success message
+              jsPsych.getDisplayElement().innerHTML = `
+                <div class="save-success">
+                  Data saved successfully in ${saveDurationMs} ms. Thank you!
+                </div>
+              `;
+            }
+            catch (err) {
+              console.error("Saving error:", err);
+              jsPsych.getDisplayElement().innerHTML = `
+                <div class="save-error">
+                  Error saving data: ${err.message}
+                </div>
+              `;
+            }
+            finally {
+              overlay.remove();
+              // 8) Countdown then end
+              const countdownDuration = 3;
+              startCountdown(countdownDuration, confirmid);
+            }
+          },
+          
 
-            // if (lasttestpos.includes(num_tottest_finaltest)) { 
-                if (true) { 
-                
-
-                    // --->>> 1. Record Start Time & Show Indicator <<<---
-                    const saveStartTime = Date.now(); // Record start time for saving duration
-                    const overlay = createSaveOverlay();
-    
-                    // document.body.appendChild(renderwait);
-                    
-                    var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
-                    // if (!participantId){
-                    if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
-                        
-                        participantId = jsPsych.data.get().last(1).select('id').values[0]; 
-                    }    
-                    
-                    
-                    // console.log("nnnnnnnot if",participantId,jsPsych.data.get().last(1))
-                    
-                    if   (participantId){
-                        console.log("aaaaaaaaaaaaafter_if",participantId)
-                        var saveDurationMs = 0;
-                        var saveEndTime = 0;
-                        const finalCollectionName = 'participants_finished';
-                        
-                        try {
-                            // 1. Get ALL final data
-                            console.log("tttttttttry",participantId)
-                            const allTrialDataObjects = jsPsych.data.get().trials;
-                            
-                            
-                            // console.log(`onExperimentFinishFinalSave: Found ${allTrialDataObjects.length} total final trials to save.`);
-                            
-                            // 2. Define the NEW TOP-LEVEL collection and subcollection reference for FINAL data
-                            
-                            const finalCollectionName = 'participants_finished';
-                            const finalSubcollectionName = 'final_trials';
-                            // Reference to the SUBCOLLECTION where trials will be saved
-                            const finalTrialsCollectionRef = collection(db, finalCollectionName, participantId, finalSubcollectionName);
-                        
-                            
-                            // --->>> 2. FIRESTORE BATCH SAVE LOGIC (as before) <<<---
-                            console.log(`Preparing to save ${allTrialDataObjects.length} trials in batches...`);
-                            console.time("batchTrialSave"); // Start timer for batch process
-                            
-                            const batchSize = 400; // Firestore limit 500, use slightly less
-                            let batch = writeBatch(db); // Initialize the first batch
-                            let operationsInBatch = 0;
-                            let totalSavedCount = 0;
-                            const batchCommits = []; // To store promises of batch commits
-    
-        
-
-                            for (const rawTrialData of allTrialDataObjects) {
-                                
-                                try {
-                                    // const cleanedTrialData = replaceUndefinedWithNull({ ...rawTrialData });
-                                    const cleanedTrialData = JSON.parse(
-                                        JSON.stringify(rawTrialData, (key, value) => (value === undefined ? null : value))
-                                    );
-
-                                    
-                                    
-                                    // Create a reference for a *new* document in the subcollection
-                                    const newTrialDocRef = doc(finalTrialsCollectionRef); // Auto-generates ID
-                                    
-                                    // Add a 'set' operation for this new document to the current batch
-                                    batch.set(newTrialDocRef, cleanedTrialData);
-                                    operationsInBatch++;
-                                    
-                                    // If batch is full, commit it and start a new one
-                                    if (operationsInBatch >= batchSize) {
-                                        console.log(`Committing batch with ${operationsInBatch} trial documents...`);
-                                        // batchCommits.push(batch.commit()); // Add the commit promise to array
-                                        const commitPromise = batch.commit()
-                                            .then(() => console.log(
-                                                `Batch #${operationsInBatch} finished in`,
-                                                Date.now() - saveStartTime,
-                                                "ms"
-                                            ))
-                                            .catch(e => console.error("Batch #"+operationsInBatch+" failed:", e));
-
-                                        batchCommits.push(commitPromise);
-
-                                        batch = writeBatch(db); // Start a new batch
-                                        operationsInBatch = 0;  // Reset counter
-                                    }
-                                } catch (trialPrepError) {
-                                    console.error("Error preparing individual trial data:", trialPrepError, rawTrialData);
-                                    // Optionally skip this trial or handle error
-                                }
-                            } 
-                            // Commit any remaining operations in the last batch
-                            if (operationsInBatch > 0) {
-                                console.log(`Committing final batch with ${operationsInBatch} trial documents...`);
-                                batchCommits.push(batch.commit());
-                                console.log(`Committing final batch Sucess!!!`);
-                            }
-                             // --- End Loop ---
-    
-                            
-                            // --->>> WAIT FOR ALL TRIAL BATCHES <<<---
-                            try {
-                                await Promise.all(batchCommits); // Wait for all commit promises
-                                totalSavedCount = allTrialDataObjects.filter(d => typeof d === 'object' && d !== null).length; // Count valid objects
-                                console.timeEnd("batchTrialSave"); // End timer
-                                console.log(`Successfully committed all batches. Total trials saved: ${totalSavedCount}`);
-                                // Update summary doc count if needed (or do it after Promise.all)
-                                // await updateDoc(finalParticipantDocRef, { total_trials_saved_successfully: totalSavedCount });
-                                
-                            } catch (batchCommitError) {
-                                console.timeEnd("batchTrialSave"); // End timer even on error
-                                console.error("Error committing one or more batches:", batchCommitError);
-                                // Implement fallback or error reporting here
-                            }
-                            
-                            // --->>> 3. Calculate Duration & Update Summary Document <<<---
-                            saveEndTime = Date.now();
-                            saveDurationMs = saveEndTime - saveStartTime; // Duration in milliseconds
-                            console.log(`Total save function duration (including waiting indicator): ${saveDurationMs} ms`);
-    
-                            
-                            /////////////end save; close notification window below
-                            
-                            
-                        } catch (e) {
-                            console.error("onExperimentFinishFinalSave: A critical error occurred during the final save process:", e);
-                        }
-                        console.log("--- onExperimentFinishFinalSave finished ---");
-
-
-                        //  1. Save the summary data first (optional, can be done before/after batch)
-                            const finalParticipantDocRef = doc(db, finalCollectionName, participantId);
-                            try {
-                                await setDoc(finalParticipantDocRef, {
-                                    subject_id: participantId,
-                                    final_save_initiated: serverTimestamp(),
-                                    // total_trials_in_final_data: allTrialDataObjects.length, // Placeholder count
-                                    time_used_total: (Date.now() - lastActivityTime) / 1000 / 60,
-                                    time_taken_save:  saveDurationMs,
-                                    time_start: lastActivityTime
-                                }, { merge: true });
-                            } catch (summaryError) {
-                                console.error("Error saving summary document:", summaryError);
-                                // Decide if you want to proceed with trial data if summary fails
-                            }
-
-                        // const finalsave = collection(
-                        //     db,
-                        //     'participants_finished',
-                        //     participantId
-                        //   );
-                        // const datasave = {
-                        //     subject_id: participantId, // Good to have the ID here too
-                        //     final_save_timestamp: serverTimestamp() // Add the completion timestamp HERE
-                        //     // Add other summary fields if needed (ensure they are defined!)
-                        //     // Example: total_trials_attempted: allTrialDataObjects.length // Use length if sure it's defined
-                        // };
-
-                        // await addDoc(collection(db, 'participants', participantId, "condition_save"), {if_finished:1, time_takenExp_before_save_min: (saveEndTime-lastActivityTime)/1000/60, time_taken_save:  saveDurationMs, time_start: lastActivityTime, time_now:serverTimestamp() });
-                        // //     // This line will execute only after addDoc is successful
-                        // // console.log("Final final data saving complete!");
-                        // await setDoc(finalsave, datasave, { merge: true })
-                        // .then(() => {
-                        // // const took = Date.now() - startTs;
-                        // console.log(`Firestore finalsave write finished`);
-                        // })
-                        // .catch(err => {
-                        // console.error('Firestore finalsave failed:', err);
-                        // });
-
-
-                        
-                    }//end if partipcants id; end saving process
-                    
-                    overlay.remove();
-                    const countdownDuration = 3; // seconds
-                    startCountdown(countdownDuration, confirmid);
-                    
-                    
-                }
-                            else {
-                    console.log("!!Is not full finish")
-                }
-        },
-
-        on_trial_finish: async function onTrialFinish(data) { // Or define it outside and reference it
-            jsPsych.data.get().addToLast({timepassed_mins: ((Date.now()-lastActivityTime)/1000/60).toFixed(2) });//adding passed time
-            if (jsPsych.data.get().last(1).trials[0].testPos_final===num_tottest_finaltest && jsPsych.data.get().last(1).trials[0].task==="finalTest" && !is_debug) {
-                jsPsych.data.addProperties({
-                    is_finished: 1
-            })};
-            data.width =  window.innerWidth;
+          on_trial_finish: async function(data) {
+            // 1) Track elapsed experiment time (mins) on every trial
+            jsPsych.data.get().addToLast({
+              timepassed_mins: ((Date.now() - lastActivityTime) / 1000 / 60).toFixed(2)
+            });
+          
+            // 2) Mark “is_finished” once you hit the very last final-test trial
+            const last = jsPsych.data.get().last(1).trials[0];
+            if (
+              last.testPos_final === num_tottest_finaltest &&
+              last.task === "finalTest" &&
+              !is_debug
+            ) {
+              jsPsych.data.addProperties({ is_finished: 1 });
+            }
+          
+            // 3) Record viewport size
+            data.width  = window.innerWidth;
             data.height = window.innerHeight;
-            // 1. Get the raw data for the last trial
-            //    Use jsPsych.data.getLastTrialData() for simplicity if available and suitable,
-            //    or stick to your method if needed. Let's assume 'data' passed in is sufficient.
-            //    Make a copy to avoid modifying the original jsPsych data object.
-            const rawTrialData = { ...data }; // Creates a shallow copy
           
-            // 2. Clean the data: Replace undefined with null
-            // const cleanedTrialData = replaceUndefinedWithNull(rawTrialData);
-            const cleanedTrialData = replaceUndefinedWithNull(rawTrialData);
+            // 4) Clone & clean the trial data
+            const rawTrialData     = { ...data };
+            const cleanedTrialData = JSON.parse(
+              JSON.stringify(rawTrialData, (k, v) => (v === undefined ? null : v))
+            );
           
-            // 3. Add participant ID if it's not already reliably in the trial data
-            var participantId = jsPsych.data.get().last(1).select('subject_id').values[0]; 
-            // if (!participantId){
-            if (jsPsych.data.get().last(1).select('subject_id').values[0]===undefined){
-
-                participantId = jsPsych.data.get().last(1).select('id').values[0]; 
+            // 5) Make sure subject_id is present
+            let participantId = jsPsych.data.get().last(1).select("subject_id").values[0];
+            if (!participantId) {
+              participantId = jsPsych.data.get().last(1).select("id").values[0];
             }
-
-            //    (Often jsPsych adds it automatically, but double-check)
-            if (!cleanedTrialData.subject_id && participantId) {
-                cleanedTrialData.subject_id = participantId;
+            if (participantId && !cleanedTrialData.subject_id) {
+              cleanedTrialData.subject_id = participantId;
             }
-        
-            // 4. Save to Firestore as a NEW document in a subcollection
+          
+            // 6) Send to your Render endpoint (stage1), then return immediately
             if (participantId) {
-                // const subcollectionPath = `participants/${participantId}/trials_backup`;
-                // console.log(`onTrialFinish: Preparing to save to path: ${subcollectionPath}`); // DEBUG: Log path
-              
-                try {
-                  const trialsCollectionRef = collection(db, 'participants', participantId, 'trials_backup');
-              
-                  // --- DEBUG: Log just before adding ---
-                //   console.log("onTrialFinish: Attempting addDoc with data:", cleanedTrialData);
-              
-                  // 5. Add the cleaned data as a new document
-                  const docRef = await addDoc(trialsCollectionRef, cleanedTrialData);
-              
-                  // --- DEBUG: Log success ---
-                //   console.log(`onTrialFinish: Trial data saved successfully. New trial doc ID: ${docRef.id}`);
-              
-                } catch (e) {
-                  // --- DEBUG: Log any error that occurs during saving ---
-                  console.error(`onTrialFinish: Error adding trial document to Firestore for participant ${participantId}:`, e);
-                  // Log the data that failed to save might also be helpful
-                  console.error("onTrialFinish: Data that failed to save:", cleanedTrialData);
-                }
-                //  console.log("--- onTrialFinish finished ---"); // DEBUG: Check if function completes
-                
-                
-                // window.location = "https://www.google.com";
+              const saveStart = performance.now();
+              try {
+                fetch("https://jspsych-backend.onrender.com/save-trial-data", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ participantId, trialData: cleanedTrialData })
+                  })
+                    .then(resp => {
+                      if (!resp.ok) return resp.text().then(t => { throw new Error(t) });
+                      console.log(`Trial save ACK in ${Math.round(performance.now() - saveStart)} ms`);
+                    })
+                    .catch(err => {
+                      console.error("Trial save network/error:", err);
+                    });
+                  // no await — code flows straight through to the next trial
+              } catch (err) {
+                console.error("Network error saving trial:", err);
+              }
             }
-
-
-           
-            },
+          },
     on_start: function(){
         
 
@@ -1395,34 +1273,31 @@ var enterid = {
             jsPsych.endExperiment();
         };
 
-        const warmupColl = collection(
-            db,
-            'participants_finished',
-            save_id_use,
-            'final_trials'
-          );
-        const keepAliveRef = doc(warmupColl);
-        // this no-op listener prevents the channel from going idle
-        onSnapshot(
-          keepAliveRef,
-          () => { /* nothing */ },
-          err => console.error('keep-alive snapshot error:', err)
-        );
+        // const keepAliveRef = ref(
+        //     db,
+        //     `participants_finished/${save_id_use}/final_trials`
+        //   );
+        //   onValue(
+        //     keepAliveRef,
+        //     () => { /* nothing */ },
+        //     err => console.error('keep-alive listener error:', err)
+        //   );
         
 
-          const warmupDocRef = doc(warmupColl); // auto‐generated ID
-          const startTs = Date.now();
+        //   // --- RTDB equivalent (using the globals we exposed in index.html) ---
+        //     const warmupRef      = ref(db, `participants_finished/${save_id_use}/keepalive_warmups`);
+        //     const startTs        = Date.now();
+        //     const newWarmupEntry = push(warmupRef);    // creates a new child with a unique key
 
-          setDoc(warmupDocRef, { task: "warmup" })
-            .then(() => {
-            const took = Date.now() - startTs;
-            console.log(`Firestore warm‐up write finished in ${took} ms`);
-            })
-            .catch(err => {
-            console.error('Firestore warm‐up failed:', err);
-            });
-
-           
+        //     set(newWarmupEntry, { task: "warmup" })
+        //     .then(() => {
+        //         const took = Date.now() - startTs;
+        //         console.log(`RTDB warm‐up write finished in ${took} ms`);
+        //     })
+        //     .catch(err => {
+        //         console.error('RTDB warm‐up failed:', err);
+        //     });
+                    
 
     },
     data: {

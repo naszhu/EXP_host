@@ -3,12 +3,12 @@
 
 
 const picdir = "images/"
-const codeversion_begins = 2.2;//!! v2= render backend!!
+const codeversion_begins = 2.3;//!! v2= render backend!!
 
 const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
 
 // console.log("newtry__________")
-var is_debug = false //!!
+var is_debug = true //!!
 console.log("is_debug:", is_debug)
 const is_inst_fullscreen = true;//!!
 const is_showcorrect_inlog = false; //!!
