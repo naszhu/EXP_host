@@ -25,6 +25,12 @@ DATA_SOURCES = [
         "top_level_collection": "participants_finished",
         "subcollection_name": "final_trials",
         "output_suffix": "finished" # Suffix for the output filename
+    },
+        {
+        "id": "finished_previous", # Identifier for this source
+        "top_level_collection": "participants",
+        "subcollection_name": "trials",
+        "output_suffix": "backup_ealier" # Suffix for the output filename
     }
 ]
 
