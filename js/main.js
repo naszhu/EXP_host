@@ -1517,19 +1517,20 @@ var instructions_finaltest = {
 
         if (is_debug) return(false)
 
-        var timeElapsed = jsPsych.getTotalTime() - instructionsStartTime;
-        console.log(timeElapsed)
-        timelimit = timelimit_finalinst; //Attention! Check here! This has been causing problems
-        // timelimit = 1000;
-        timeleft = Math.round((timelimit-timeElapsed)/1000);
-        if(timeElapsed < timelimit) {
-            // Less than 10 seconds passed, continue looping
-            warningfunc(jsPsych,`<div style="text-align:center ; font-size: larger; font-weight: bold; color: black;"><br> <br> <br> <br> <br>Please take more time to read the instructions! (${timeleft} seconds left)</div>`,warning_duration)
-            return true; 
-        } else {
-            // 10 seconds have passed, break the loop
-            return false;
-        }
+        return(false) 
+        // var timeElapsed = jsPsych.getTotalTime() - instructionsStartTime;
+        // console.log(timeElapsed)
+        // timelimit = timelimit_finalinst; //Attention! Check here! This has been causing problems
+        // // timelimit = 1000;
+        // timeleft = Math.round((timelimit-timeElapsed)/1000);
+        // if(timeElapsed < timelimit) {
+        //     // Less than 10 seconds passed, continue looping
+        //     warningfunc(jsPsych,`<div style="text-align:center ; font-size: larger; font-weight: bold; color: black;"><br> <br> <br> <br> <br>Please take more time to read the instructions! (${timeleft} seconds left)</div>`,warning_duration)
+        //     return true; 
+        // } else {
+        //     // 10 seconds have passed, break the loop
+        //     return false;
+        // }
     }
 }
 
@@ -1771,7 +1772,9 @@ var v_initialTest_trial = {
 
     on_finish: function(data){
 
-        data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response_key);
+        // data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response_key);
+        data.correct = Math.random() < 0.5;
+        console.log(data.correct)
         if (data.correct) tempcrr=1; else tempcrr=0;
         data.recognition_correct = tempcrr;
         
@@ -1783,13 +1786,17 @@ var v_initialTest_trial = {
             warningfunc(jsPsych,"<div font-size: larger; font-weight: bold; color: black;> You need to respond faster!  </div>",warning_duration)
         };
 
-        if (data.rt < rtfastcut_duration & data.response!==null){
+        // if (data.rt < rtfastcut_duration & data.response!==null){
 
-            // document.getElementById("Div1").style.visibility = "hidden";
-            warningfunc(jsPsych,`<div style= "text-align:center" ; font-size: larger; font-weight: bold; color: black; class="center-screen" ><br> <br> <br> <br> <br> Too fast!  </div>`,warning_duration)
-        };
+        //     // document.getElementById("Div1").style.visibility = "hidden";
+        //     warningfunc(jsPsych,`<div style= "text-align:center" ; font-size: larger; font-weight: bold; color: black; class="center-screen" ><br> <br> <br> <br> <br> Too fast!  </div>`,warning_duration)
+        // };
 
         // console.log(data.stimulusConditions,data.anRepeatedItem,data.num_CurrObjAppear,data.correct_appear1,data.correct_appear2)
+
+        if (!data.anRepeatedItem & ["Cn","Dn","Fnn"].includes(data.stimulusConditions)){
+            console.error("CN error!!",data.stimulusConditions )
+        }
 
         if (data.anRepeatedItem){
            
@@ -1832,9 +1839,23 @@ var v_initialTest_trial = {
                 };
                 
             }
+
+            
         } else{
             data.correct_appear1 = data.correct;
             data.correct_appear2 = null;
+        }
+        // console.log(data.id_picName,data.type_comment,data.stimulusConditionName_nPlusOneTrial,data.correct_appear1,data.correct_appear2)
+        console.log(data.stimulusConditionName_nPlusOneTrial,data.correct_appear1,data.correct_appear2)
+
+        if (correctionmap.get(data.id_picName)){
+            console.log(`list num ${data.listNum_appear0_initial}, test num ${data.testPos_appear0_initial}`)
+            console.log(`corr_map_1 & data ${correctionmap.get(data.id_picName).correct_appear1}, ${data.correct_appear1}`)
+            console.log(`corr_map_2 & data ${correctionmap.get(data.id_picName).correct_appear2}, ${data.correct_appear2}`)
+
+            if (data.correct_appear1 !== correctionmap.get(data.id_picName).correct_appear1) {
+                console.error(`Error: correct_appear1 mismatch for id_picName: ${data.id_picName}`);
+            }
         }
 
 
@@ -1868,10 +1889,16 @@ var prompt_f_list  = {
     post_trial_gap: posgap_duration
 };
 
-    
+    var cntest=0
+
 var v_finaltest = {
 
     on_start: function(trial){
+
+        if (trial.data.stimulusConditions=="Cn" & trial.data.listNum_appear1_initial===0){
+         console.error("found err here")
+         jsPsych.endExperiment()   
+        }
         // if (is_showcorrect_inlog) console.log("Correct answer:",trial,trial.data.correct_response_key);
         if (is_showcorrect_inlog) console.log("Correct answer:",trial.data.correct_response_key);
 
@@ -1946,7 +1973,14 @@ var v_finaltest = {
         },
         on_finish: function(data){
 
-            data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response_key);
+            if (data.stimulusConditions=="Cn" & data.listNum_appear1_initial===0){
+                console.error("found err here")
+                jsPsych.endExperiment()   
+               }
+
+            // data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response_key);
+            data.correct = Math.random() < 0.5;
+
             if (data.correct) tempcrr=1; else tempcrr=0;
             data.recognition_correct = tempcrr;
 
@@ -1954,25 +1988,80 @@ var v_finaltest = {
 
             // data.accumulated_accuracy = (data.accumulated_accuracy*(data.testpos-1)+tempcrr)/data.testpos;  
 
-            if (data.response === null & (!is_debug)){
-                warningfunc(jsPsych,`<div font-size: larger; font-weight: bold; color: black;"> You need to respond faster!  </div>`,warning_duration)
-            }
-            if (data.rt < rtfastcut_duration & data.response!==null & (!is_debug)){
-                warningfunc(jsPsych,`<div style= "text-align:center" ; font-size: larger; font-weight: bold; color: black; class="center-screen" ><br> <br> <br> <br> <br> Too fast!  </div>`,warning_duration)
-            };
+            // if (data.response === null & (!is_debug)){
+            //     warningfunc(jsPsych,`<div font-size: larger; font-weight: bold; color: black;"> You need to respond faster!  </div>`,warning_duration)
+            // }
+            // if (data.rt < rtfastcut_duration & data.response!==null & (!is_debug)){
+            //     warningfunc(jsPsych,`<div style= "text-align:center" ; font-size: larger; font-weight: bold; color: black; class="center-screen" ><br> <br> <br> <br> <br> Too fast!  </div>`,warning_duration)
+            // };
 
             // console.log(correctionmap);
             lastobj = correctionmap.get(data.id_picName);
+
+            if ("FF" !== data.stimulusConditions && !["A", "B", "Fn"].includes(data.stimulusConditions)) {
+                console.log(" ");
+                // console.log("correction map",correctionmap)
+                console.log(data.stimulusConditions);
+            }
             if (lastobj){
 
                 if (!lastobj) console.log("Error!!",data.stimulusConditions)
                 data.correct_appear1 = lastobj.correct_appear1;
                 data.correct_appear2 = lastobj.correct_appear2;
             }
+            if (lastobj){
+
+                console.log("found------------")
+                console.log("now---------------------",data.type_comment, lastobj.type_comment,
+                    data.stimulusConditions, lastobj.stimulusConditions, 
+                    data.correct_appear1, lastobj.correct_appear1, 
+                    data.correct_appear2, lastobj.correct_appear2) 
+            }
+            // if(data.stimulusConditions=="Cn" & !lastobj){
+            //     console.error("CN didn't find a match", data.id_picName, data.stimulusConditionName_nPlusOneTrial,data.listNum_appear2_initial,data.testPos_appear2_initial,
+            //         `was in ${data.listNum_appear1_initial}, ${data.testPos_appear1_initial}`
+            //     )
+            //     console.log("obj found in initialtestarr",test_lists_arrArrObj_inUse.flat(2).filter(obj => obj.id_picName === data.id_picName))
+            //     console.log("obj found in finaltestarr",finalTest_lists_arrArrObj_inUse.flat(2).filter(obj => obj.id_picName === data.id_picName))
+            //     console.log("testobj",test_lists_arrArrObj_inUse)
+            //     // jsPsych.endExperiment()
+            // }
+
+            if (!["A", "B", "Fn","FF"].includes(data.stimulusConditions) & !lastobj & data.listNum_appear1_initial!=10){
+                console.error("Error!!",data.stimulusConditions)
+                console.log(data.id_picName, data.stimulusConditionName_nPlusOneTrial,data.listNum_appear2_initial,data.testPos_appear2_initial,
+                            `was in ${data.listNum_appear1_initial}, ${data.testPos_appear1_initial}`)
+                console.log("obj found in initialtestarr",test_lists_arrArrObj_inUse.flat(2).filter(obj => obj.id_picName === data.id_picName))
+                console.log("obj found in finaltestarr",finalTest_lists_arrArrObj_inUse.flat(2).filter(obj => obj.id_picName === data.id_picName))
+                console.log("testobj",test_lists_arrArrObj_inUse)
+                jsPsych.endExperiment()
+            }
+
 
         }
         // post_trial_gap: posgap_duration
     };
+
+// console.log(finalTest_lists_arrArrObj_inUse,correctionmap)
+// console.log("correctionmap",correctionmap)
+// for (const ilist of finalTest_lists_arrArrObj_inUse) {
+//     console.log(`ilist ${ilist}`);
+//     for (const iobj of ilist) {
+//         const currobj = iobj;
+//         console.log(`currobj ${currobj}, currobj_picname ${currobj.id_picName}`,currobj);
+//         const lastobj = correctionmap.get(currobj.id_picName);
+
+//         if (lastobj) {
+//             console.log("YES below");
+//             console.log(
+//                 currobj.type_comment, lastobj.type_comment,
+//                 currobj.stimulusConditions, lastobj.stimulusConditions,
+//                 currobj.correct_appear1, lastobj.correct_appear1,
+//                 currobj.correct_appear2, lastobj.correct_appear2
+//             );
+//         }
+//     }
+// }
 
 var finaltest_feedbackss = {
     type: jsPsychHtmlKeyboardResponse,
@@ -2176,7 +2265,7 @@ var exit_fullscreen = {
 //********************************************************************************************************
 let all_lists_initial_inUse = [];
 
-ndebugtemplistnum = n_lists_singular//2; //n_lists_singular
+ndebugtemplistnum = n_lists_singular
 
 for (let ilist=0; ilist < ndebugtemplistnum; ilist++){
     all_lists_initial_inUse.push({
@@ -2193,39 +2282,39 @@ console.log("all_lists_initial_inUse",all_lists_initial_inUse)
 const initialTest_timeline = all_lists_initial_inUse.map(function(list,list_ind){
         return {
             timeline: [
-                {
-                    timeline: list_ind === 0 ? [prompt_instructions_practice] : list_ind===1 ? [instructions_test] : [prompt_instructions_between]
-                },
-                {
-                    timeline: [fixation]
-                },
-                {//The following are comparable to push the 'final' stuff into the timeline variable; as if creating a new timeline varible element
-                    timeline: [v_initialstudy_trial],
-                    timeline_variables: list.studies
-                },
-                {
-                    timeline: [prompt_digits]
-                },
-                {
-                    timeline: [fixation]
-                },
-                {
-                    timeline: [v_digitpresent],
-                    timeline_variables: list.digits
-                },
-                {
-                    timeline: [answer_digit_looptrial],
-                    timeline_variables: [digit_totCorrect_sum_arrObj_inUse[list_ind]]
-                },                    
-                {
-                    timeline: [prompt_countingfeedback]
-                },
-                {
-                    timeline: [prompt_test_initial]
-                },                    
-                {
-                    timeline: [fixation]
-                },                    
+                // {
+                //     timeline: list_ind === 0 ? [prompt_instructions_practice] : list_ind===1 ? [instructions_test] : [prompt_instructions_between]
+                // },
+                // {
+                //     timeline: [fixation]
+                // },
+                // {//The following are comparable to push the 'final' stuff into the timeline variable; as if creating a new timeline varible element
+                //     timeline: [v_initialstudy_trial],
+                //     timeline_variables: list.studies
+                // },
+                // {
+                //     timeline: [prompt_digits]
+                // },
+                // {
+                //     timeline: [fixation]
+                // },
+                // {
+                //     timeline: [v_digitpresent],
+                //     timeline_variables: list.digits
+                // },
+                // {
+                //     timeline: [answer_digit_looptrial],
+                //     timeline_variables: [digit_totCorrect_sum_arrObj_inUse[list_ind]]
+                // },                    
+                // {
+                //     timeline: [prompt_countingfeedback]
+                // },
+                // {
+                //     timeline: [prompt_test_initial]
+                // },                    
+                // {
+                //     timeline: [fixation]
+                // },                    
                 {
                     timeline: [v_initialTest_trial],
                     timeline_variables: list.tests
@@ -2240,6 +2329,13 @@ const f_test_promp_arrObj = range(0,n_lists_singular).map(i=>[{
     f_listnum: i,
     condi
 }]);
+
+const totalCnCount = finalTest_lists_arrArrObj_inUse.flat(2).filter(obj => obj.stimulusConditions === "Cn").length;
+const totalCnCount_lm = finalTest_lists_arrArrObj_inUse.flat(2).filter(obj => obj.listNum_appear1_initial === 0 & obj.stimulusConditions=="Cn").length;
+console.log("Total number of objects with stimulusConditions == 'Cn':", totalCnCount);
+console.log("Total number of objects with Cn listnum1=0':", totalCnCount_lm);
+// Add a force abort mechanism
+// jsPsych.endExperiment("The experiment was aborted by the participant.");
 
 console.log("Current jsPsych version: " + jsPsych.version());
 for (let ilistf=0; ilistf < ndebugtemplistnum; ilistf++){
@@ -2277,12 +2373,12 @@ const finalTest_timeline = all_lists_final_inUse.map(function(list,list_ind){
 timeline.push(preloass)
 
 
-if (is_inst_fullscreen) {
-    timeline.push(enterid);
-    timeline.push(browser_check);
-    timeline.push(instructions);
-    timeline.push(enter_fullscreen);
-}
+// if (is_inst_fullscreen) {
+//     timeline.push(enterid);
+//     timeline.push(browser_check);
+//     timeline.push(instructions);
+//     timeline.push(enter_fullscreen);
+// }
 
 timeline.push(initialTest_timeline);
 
