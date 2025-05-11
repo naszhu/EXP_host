@@ -4,18 +4,34 @@
  * The experiment involves presenting images, summing digits, and responding to test stimuli.
  * 
  * 
- *  1. Changed from last V1.2 mainly on the consent form, but still had one place forgot to change
- *  2. Forgot to change version number from 1.2 to later
+ *  1. Changed from last V1.2(2), further change consent form. 
+ * 2. Important instruction of between-list prompt changed, list 2 told them to remember press F for pictures from previous but not the current list
+ * 
+ * !! The final test instrucitons were wrong
+ * 
+ * 
+ * 
  */
-const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
+
+// // Add version log information to the data properties
+// jsPsych.data.addProperties({
+//     version_log: [
+//         { version: "1.2", changes: "Changed consent form, added between-list prompt for list 2." },
+//         { version: "1.3", changes: "Updated instructions and fixed minor bugs." },
+//         { version: "1.4", changes: "Further changes to consent form and instructions." }
+//     ]
+// });
+
+const codeversion_begins = 1.4;//!! v1= pilot
+
+ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
         JT = x=>jsPsych.timelineVariable(x);
         JRR = (x,y)=>jsPsych.randomization.repeat(x,y);
 
-        var is_debug = false; //!!
+        var is_debug = false //!!
         const is_inst_fullscreen = true;//!!
         const is_showcorrect_inlog = false; //!!
         const timeout_inmin = 200; //100 minutes
-        const codeversion_begins = 1.2;//!! v1= pilot
         const timelimit_finalinst=1000*5;//check this in curr file. 
         const timelimit_initial_inst = 1000*5;//check this, it's how much time compulsive is for the instructions initial 
         const timeout = 1000 * 60 * timeout_inmin ; // 70 minutes in milliseconds
@@ -1212,20 +1228,20 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
 
     const practice_text = `
 
-      <p style='text-align: justify;color: black;background: white;font: caption-;''>(1) A list of 30 pictures will appear on the screen one at a time. Study the pictures as they appear.</p>
-      <p style='text-align: justify;color: black;background: white;font: caption-;''>(2) Then, after a brief blank period, you will see a series of numbers. Add those as they come, and when you see the words “TYPE THE SUM”, use the number keys to type your answer. </p>
-     
-    <p style='text-align: justify; color: black; background: white; font: caption-;'> 
-    (3) Next, you will see a series of test pictures from the list you just studied. For each picture, press the <strong>"J"</strong> key if you recognize it as one you’ve seen in the current list. Press the <strong>"F"</strong> key if you don’t recognize it as one from the current list.       <br>   
-        <strong>Performance are taking into consideration in this step.  you will have to show averaged performance at least 60% (chance level performance is 50%) </strong>. </p>
-      <p style='text-align: justify; color: black; background: white; font: caption-;'>
-      You will begin with a practice list, followed by nine formal test lists. <strong>For each test, respond based only on the list you JUST studied. If a picture appeared in a previous list but not the current one, press the <strong>"F"</strong> key.</strong>
-    </p>
+        <p style='text-align: justify;color: black;background: white;font: caption-;'>1. A list of 30 pictures will appear on the screen one at a time. Study the pictures as they appear.</p>
+        <p style='text-align: justify;color: black;background: white;font: caption-;'>2. After a brief blank period, you will see a series of numbers. Add these numbers as they appear. When prompted with "TYPE THE SUM," use the number keys to enter your answer.</p>
+         
+        <p style='text-align: justify; color: black; background: white; font: caption-;'> 
+        3. Next, you will see a series of test pictures from the list you just studied. For each picture, press the <strong>"J"</strong> key if you recognize it as one you’ve seen in the current list. Press the <strong>"F"</strong> key if you don’t recognize it as one from the current list. <br>   
+          <strong>Accumulated accuracy will be displayed throughout the experiment. Please pay attention and try to get an averaged performance higher than 60% (chance level is 50%).</strong></p><br>
+        <p style='text-align: justify; color: black; background: white; font: caption-;'>
+        You will begin with a practice list, followed by nine formal test lists. <strong>For each test, respond based only on the list you JUST studied. If a picture appeared in a previous list but not the current one, press the <strong>"F"</strong> key.</strong>
+        </p>
 
-<p style='text-align: justify;color: black;background: white;font: caption-;''>Do not worry if you were unsure about many test pictures. That is normal but make your best guess. </p>
-      <p style='text-align: justify;color: black;background: white;font: caption-;''> Please start the practice list now by pressing the enter key. </p>
-        
-        `; //not sure if gonna use this, check later
+    <p style='text-align: justify;color: black;background: white;font: caption-;'>Do not worry if you are unsure about some test pictures. This is normal, but please make your best guess.</p>
+        <p style='text-align: justify;color: black;background: white;font: caption-;'>Press the "Enter" key to start the practice list.</p>
+          
+          `;
 
 
 
@@ -1278,12 +1294,13 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
         type: jsPsychHtmlKeyboardResponse,
         stimulus: `
         <p style='text-align: justify;color: black;background: white;font: caption-;''>
-            Now you have finished the practice. When ready, start the study list with the ‘enter’ key.</p>
+            Now you have finished the practice. When ready, start the study list with the ‘enter’ key.</p><p> Remember, respond based only on the list you JUST studied. If a picture appeared in a previous list but not the current one, press the <strong>"F"</strong> key.</p>
         `,
         post_trial_gap: posgap_duration,
         trial_duration: instruction_duration,
         choices: choiceenter
         };
+        
 
     var prompt_instructions_between = {//Check this
 
@@ -1299,6 +1316,7 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
             console.log("ii")
         }
     };
+
 
     var prompt_countingfeedback = {//correct and in correct
 
@@ -1326,8 +1344,7 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
         <strong>You have now completed the first part of the study. <br>
 
          <strong>You will now see a very long series of test pictures.</strong> For each test,respond with the <FONT color="#C41E3A"><strong>"J"</FONT></strong> key to indicate you have seen this picture some time during first part of the experiment, whether <FONT color="#C41E3A"><strong>studied or tested</strong> on ANY list</FONT>. You will press the <FONT color="#C41E3A"><strong>"F"</FONT></strong> key to indicate that you have NEVER seen this pictures in first part of the study.</p>
-      <p style='text-align: justify;color: black;background: white;font: caption-;paddingRight =10px; paddingLeft =10px;''>After respond, your accumulated accuracy will not be presented, but <strong>you will be told if that item had actually never been seen, or had actually been seen on a previous list </strong>in which case you will be told which list it had been on for study or test:  </p>
-      <p style='text-align: justify;'><FONT color="#C41E3A">1 = the test item was studied or tested on the <strong>first</strong> list you were given;</p><p style='text-align: justify'>10 = the test item was studied or tested on the <strong>last</strong> list you were given.</p></Font>
+      <p style='text-align: justify;color: black;background: white;font: caption-;paddingRight =10px; paddingLeft =10px;''>After each respond, your accumulated accuracy will be presented like before.  </p>
 
 
     <p style='text-align: justify;color: black;background: white;font: caption-;paddingRight =30px; paddingLeft =30px;'>If you have read and understood these instructions, press the RETURN/ENTER key to go to the testing. </p>`
@@ -1376,6 +1393,7 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
             }
         }
     }
+    
 
     var ISI = {
             type: jsPsychHtmlKeyboardResponse,
@@ -1913,7 +1931,7 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
 
             return "<p color:black>YOU FINISHED!<p><p color: black>Your overall accumulated accuracy is: <strong>".concat(
             Math.round(nownow*100)).concat(
-                `%</strong><p> <p color:black>You will get a completion code if you hit 'enter', but you might be rejected if your accuracy is lower than 60%. You could decide if you want to return your completion code.<p>`)
+                `%</strong><p> <p color:black>You will get a completion code if you hit 'enter'.<p>`)
         },
         // stimulus: `<p>You've finished the last task. Thanks for participating!</p>
             // <p><a href="https://app.prolific.co/submissions/complete?cc=C2P9U8QZ">Click here to return to Prolific and complete the study</a>.</p>`,
@@ -2115,9 +2133,10 @@ const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//
             };
     });
     
+// timeline.push(surveyend,survey_HaveSeenImages,survey_detailSeenImages)//check this he
 
+timeline.push(preloass)
 
-    timeline.push(preloass);
 
     if (is_inst_fullscreen) {
         timeline.push(enterid);
