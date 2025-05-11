@@ -1,19 +1,24 @@
-//The following is a pilot version- V1
-        //Check consent form tomorrow.
-        //consent: change you will see a list of words to remember to pictures - checked
-        ///intiial instructions - font became smaller for a line - checked
-        // disable show correct - checked
-        //check practice instructions - checked
-        //add a survey trial to ask if this participant have done task like this before. (from other researchers)
+
+
+
 /************************************************************************************
-* Code version v1 - pilot tested 2 participants 
+* Code version v1.2 - pilot tested 3 participants
 * --------------------------------------------------------------------------------
-* 1. testPos_appear2_initial was wrong because line 639 was reversed on target and nontarget assignment
-* 2. forgot to add the surveytrial timelines 
+* 1. This version added survey questions timeline at the end
+* 2. Modified code lline 638:  obj.current_assignmentTypesWithinList = ['A','Cn'].includes(obj.stimulusConditions) ? "T_nontarget" : "T_target"; --> T_target and T_nontarget logic is reverse previously
+* 3. Practice test instructions has been changed. (Emphysis only judging CURRENT list to be old)
+*
+
+Problem of this version:
+1. Forgot to change consent form--the concent form has real big problems, please don't write accuracy stuff in it.
+2. Next version could choose to change the way jspsych end when the preload failed. Right now, it is using formal EndExperiment, which gives signal to cognition.run in marking it as finished data, though it shouldn
+t. -- This is not super important, doesn't have to be changed.
+3. There is a FALSE in testpos_appear2_initial, in final test, has somewhere to be "FALSE", but elsewhere to be number value 0 or 1-20. However, I don't know if changing this is a necessarily a good thing-- 
+    If I change this version, then when I am analyzing the data, I need to repatch and replace some of the FALSE into 0 and make some others to be something else, which could create potential confounds.  
 ************************************************************************************/
 
 
-        
+
 const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
 JT = x=>jsPsych.timelineVariable(x);
 JRR = (x,y)=>jsPsych.randomization.repeat(x,y);
@@ -22,7 +27,7 @@ var is_debug = false; //!!
 const is_inst_fullscreen = true;//!!
 const is_showcorrect_inlog = false; //!!
 const timeout_inmin = 200; //100 minutes
-const codeversion_begins = 1;//!! v1= pilot
+const codeversion_begins = 1.2;//!! v1= pilot
 const timelimit_finalinst=1000*5;//check this in curr file. 
 const timelimit_initial_inst = 1000*5;//check this, it's how much time compulsive is for the instructions initial 
 const timeout = 1000 * 60 * timeout_inmin ; // 70 minutes in milliseconds
@@ -33,6 +38,7 @@ let lastActivityTime = Date.now();
 
 document.body.style.backgroundColor = "white";
 var styleElement = document.createElement('style');
+
 
 
 // Hide continue button in text filling, but I don't think I need this in curr file.
@@ -462,7 +468,7 @@ for (const type of TypeNames_arr) {
             testPos_appear1_initial: null,
             is_studied_appear1_initial: null,
             is_tested_appear1_initial: null,
-            studyPos_appear2_initial: null,
+            studyPos_appear2_initial: null,//This is actually always 0
             testPos_appear2_initial: null,
             is_studied_appear2_initial: null,
             is_tested_appear2_initial: null,
@@ -637,12 +643,13 @@ for (let ilist = 0; ilist < n_lists_singular; ilist++){
         obj.stimulusConditionName_nPlusOneTrial = currAssign_nPlusOneTrial;
 
 
-        obj.current_assignmentTypesWithinList = ['A','Cn'].includes(obj.stimulusConditions) ? "T_target" : "T_nontarget"; // keep this for now
+        obj.current_assignmentTypesWithinList = ['A','Cn'].includes(obj.stimulusConditions) ? "T_nontarget" : "T_target"; // keep this for now; B Dn is target
         obj.is_currentObjAppear1 = true;
         obj.num_CurrObjAppear = 1;
 
         obj.studyPos_appear1_initial = idx + 1;
         obj.testPos_appear1_initial = obj.current_assignmentTypesWithinList==="T_target" ? test.findIndex(iobj=>iobj.id_picName===obj.id_picName)+1 : 0;
+        // console.log(obj,obj.current_assignmentTypesWithinList,obj.testPos_appear1_initial)
         obj.is_studied_appear1_initial = true;
         obj.is_tested_appear1_initial = obj.testPos_appear1_initial === 0 ? false : true;
 
@@ -842,7 +849,7 @@ for (let ilist = 0; ilist < n_lists_singular; ilist++){
 
         obj.task = "initialTest";
 
-
+        let new_obj_store;
         if (addobjnow){
             obj.testPos_final =  finalTestIndex_arr_shallowCopy[ilist].pop(1);
             const getnow = getListForPosition(obj.testPos_final, n_newInList_inItemScale_finaltoPatchDouble_now_arr);
@@ -877,9 +884,14 @@ for (let ilist = 0; ilist < n_lists_singular; ilist++){
             // console.log(finalTest_lists_arrArrObj_inUse,getnow.listNumber-1,getnow.positionInList-1)
             finalTest_lists_arrArrObj_inUse[getnow.listNumber-1][getnow.positionInList-1] = new_obj_store;
             finalTest_lists_arrArrObj_inUse[getnow_FF.listNumber-1][getnow_FF.positionInList-1] = obj_iFinalFoil
-
+            
             finaltestMap.set(new_obj_store.id_picName,new_obj_store);
         }
+
+        // if (obj.stimulusConditionName_nPlusOneTrial==="B"){
+        //     console.log(obj)
+        //     console.log(new_obj_store)
+        // }
 
 
     });
@@ -1213,13 +1225,16 @@ required: true
 
 const practice_text = `
 
-<p style='text-align: justify;color: black;background: white;font: caption-;''>(1) A list of 30 pictures will appear on the screen one at a time. Study the pictures as they appear.</p>
+<p style='text-align: justify;color: black;background: white;font: caption-;''>(1) You will now see a very long series of test pictures. pictures will appear on the screen one at a time. Study the pictures as they appear.</p>
 <p style='text-align: justify;color: black;background: white;font: caption-;''>(2) Then, after a brief blank period, you will see a series of numbers. Add those as they come, and when you see the words “TYPE THE SUM”, use the number keys to type your answer. </p>
 
 <p style='text-align: justify; color: black; background: white; font: caption-;'> 
-(3) Next, you will see a series of test pictures from the list you JUST studied. For each picture, press the <strong>"J"</strong> key if you recognize it as one you’ve seen in the current list. Press the <strong>"F"</strong> key if you don’t recognize it as one from the current list. If the test picture was part of a previous list but not the current one, press the <strong>"F"</strong> key.      <br>   
+(3) Next, you will see a series of test pictures from the list you just studied. For each picture, press the <strong>"J"</strong> key if you recognize it as one you’ve seen in the current list. Press the <strong>"F"</strong> key if you don’t recognize it as one from the current list.       <br>   
 <strong>Performance are taking into consideration in this step.  you will have to show averaged performance at least 60% (chance level performance is 50%) </strong>. </p>
-<p style='text-align: justify;color: black;background: white;font: caption-;''>You will begin with a practice list, followed by nine more lists of pictures. </p>
+<p style='text-align: justify; color: black; background: white; font: caption-;'>
+You will begin with a practice list, followed by nine formal test lists. <strong>For each test, respond based only on the list you JUST studied. If a picture appeared in a previous list but not the current one, press the <strong>"F"</strong> key.</strong>
+</p>
+
 <p style='text-align: justify;color: black;background: white;font: caption-;''>Do not worry if you were unsure about many test pictures. That is normal but make your best guess. </p>
 <p style='text-align: justify;color: black;background: white;font: caption-;''> Please start the practice list now by pressing the enter key. </p>
 
@@ -1269,7 +1284,7 @@ loop_function: function(data){
 }
 }
 
-
+// timeline.push(prompt_instructions_practice)
 
 var instructions_test = {//not used here becuase there is only one practice trial
 
@@ -1722,6 +1737,8 @@ on_start: function(trial){
     else {
         trial.data.accumulated_accuracy = jsPsych.data.getLastTrialData().trials[0].accumulated_accuracy;
     };
+
+
     // console.log(jsPsych.data.get())
 },
     trial_duration: finaltest_rtlimit_duration,
@@ -1808,6 +1825,7 @@ on_start: function(trial){
             data.correct_appear1 = lastobj.correct_appear1;
             data.correct_appear2 = lastobj.correct_appear2;
         }
+
     }
     // post_trial_gap: posgap_duration
 };
@@ -1938,13 +1956,52 @@ on_finish: function(data){
 }
 // timeline.push(final_instruction)
 
+var survey_HaveSeenImages = {
+type: jsPsychHtmlButtonResponse,
+stimulus:`<p>Have you seen any of the images used in this experiment before?</p>
+<p>These images may be part of a shared pool and could have been used in other studies. Please let us know if you believe you have participated in a different experiment where you saw a portion of overlaps of the exact same images.</p>
+<p>Your answer will not affect your approval rating or compensation.</p>`,
+choices: ['Yes', 'No'],
+on_finish: function (data) {
+    // Store the participant's response
+    var HaveSeenImages = data.response === 0 ? 'Yes' : 'No';
+    jsPsych.data.addProperties({ HaveSeenImages: HaveSeenImages });
+},
+data:{task:"survey_HaveSeenImages"}
+};
+
+var survey_detailSeenImages ={
+
+timeline: [
+    {
+        type: jsPsychSurveyText,
+        questions: [
+            { prompt: `<p>If you have seen these images in a previous experiment, when did you participate in that study (approximately)?</p>
+            <p>Also, based on your estimation, what proportion of the images in this experiment overlap with those you saw before?</p> `, name: 'detailSeenImages' }
+        ],
+        data:{task:"detailSeenImages"}
+    }
+],
+
+conditional_function: function(){
+    // get the data from the previous trial,
+    // and check which key was pressed
+    var data = jsPsych.data.get().last(1).values()[0];
+    console.log(data)
+    return data.HaveSeenImages === 'Yes';
+}
+};
+
+
+
 var surveyend = {
 type: jsPsychSurveyText,
 questions: [
     { prompt: `<p>The experiment is currently in the pilot phase. Did you encounter any errors during the experiment?</p>
         <p>Were the instructions and feedback easy to understand?</p>
         <p>Did you have enough time to read the feedback after each trial?</p>
-        <p>If you have any questions or feedback about the experiment, please type it below. Your feedback would be valuable to the experimenters. </p><p>If everything was clear, press 'Enter' to skip this section.</p>`, 
+        <p>If you have any questions or feedback about the experiment, please type it below. Your feedback would be valuable to the experimenters. </p><p>If everything was clear, press 'Enter' to skip this section.</p>
+        <p>You answer would not effect your approval rate or the compensation </p>`, 
         name: 'surveyend' }
 ],
 data:{task:"surveyatend"}
@@ -2086,18 +2143,8 @@ timeline.push(initialTest_timeline);
 
 timeline.push(instructions_finaltest);
 timeline.push(finalTest_timeline);
-// timeline.push(toolUsageTrial,penPaperTrial,surveyend)//check this here
+timeline.push(surveyend,survey_HaveSeenImages,survey_detailSeenImages)//check this here
 timeline.push(exit_fullscreen,final_instruction);
-//********************************************************************************************************
-//                    Sample Tests below
-//********************************************************************************************************
-//
-// .
-//.
-// 
-//
-//********************************************************************************************************
-// jsPsych.run(timeline.flat());
 
 // timeline.push(fixation);
 jsPsych.run(timeline.flat());
