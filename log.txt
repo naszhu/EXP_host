@@ -107,3 +107,7 @@ BUG found after exp:
 1. didn't assign finalMap correct_1, correct_2 to non_repeated items, and didn't pick and find that to show in final
 
 ==>So, result is : finaltest correct_1 correct_2 only appear for repeated items from initial & doens't have that for list 10 on test2(becuase it wont' be tested next trial)
+
+Another bug:
+anRepeatedItem is not assigned at all in final test
+don't have stimulusConditionName_nPlusOneTrial in final test

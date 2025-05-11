@@ -782,6 +782,7 @@ async function runExperiment( ) {
                 new_obj_store.is_currentObjAppear1 = null;
                 new_obj_store.stimulusConditionName_nPlusOneTrial = null;
                 new_obj_store.num_CurrObjAppear = null;
+                // should assign an repeated item to be true or false here...
 
                 // console.log(getnow)
                 // console.log(finalTest_lists_arrArrObj_inUse,getnow.listNumber-1,getnow.positionInList-1)
