@@ -89,3 +89,16 @@ v1.5
         // }
         
 // });
+
+
+!!!!!!!!!!!!! CHANGES SUMMARY
+: big changes are v1 to v1.2; and v1.4 to v1.5
+
+MAIN BUGS:
+1. v1-v1.2: in study arr obj obj.current_assignmentTypesWithinList T and F is reversed, which influenced testPos_appear1_initial
+doesn influence testPos_appear0_initial for study items
+
+2. v1.4 to v1.5: currAssign_nPlusOneTrial wrong , so stimulusConditionName_nPlusOneTrial wrong for intial&final test didn't +1 for Cn and Dn
+can't rely on this in analysis, but can use type_comments
+
+3. v1.4 to v1.5: study arr obj  obj_iFinalFoil.listNum_pickedFrom = ilist + 1; influence dfinal test listNum_pickedFrom
