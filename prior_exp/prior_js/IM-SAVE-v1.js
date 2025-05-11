@@ -1,3 +1,5 @@
+
+
 /**
  * This script defines a complex experimental setup using jsPsych for a memory test experiment.
  * It includes various configurations, timelines, and trial definitions for study, test, and final test phases.
@@ -19,10 +21,19 @@
 //         { version: "1.2", changes: "Changed consent form, added between-list prompt for list 2." },
 //         { version: "1.3", changes: "Updated instructions and fixed minor bugs." },
 //         { version: "1.4", changes: "Further changes to consent form and instructions." }
-//     ]
+//     ],
+        // {
+//        version: "1.5",changes:
+            // 1. line roughtly 935; new_obj_store and obj_iFinalFoil wrong on listNum_pickedFrom;
+            // 2. Roughly line 654" currAssign_nPlusOneTrial = currAssign ; + "+1"; //MO to currAssign_nPlusOneTrial = currAssign + "+1"; //MO
+            // 3. roughly line 678; backward conditon:  
+            // else if (['Cn+1','Dn+1'].includes(condi))
+            //   else if (['Cn+1','Dn+1'].includes(currAssign_nPlusOneTrial))
+        // }
+        
 // });
 
-const codeversion_begins = 1.4;//!! v1= pilot
+const codeversion_begins = 1.5;//!! v1= pilot
 
  const confirmid = `https://app.prolific.com/submissions/complete?cc=CJBB6PTO`;//!!!!!change this 
         JT = x=>jsPsych.timelineVariable(x);
@@ -602,7 +613,7 @@ const codeversion_begins = 1.4;//!! v1= pilot
                     currAssign_nPlusOneTrial = currAssign;
                     // obj.stimulusConditionName_nPlusOneTrial = currAssign;
                 }else if (['Cn','Dn'].includes(currAssign)){
-                    currAssign_nPlusOneTrial = currAssign; + "+1";
+                    currAssign_nPlusOneTrial = currAssign + "+1"; //MODIFEID HERE v1.5
                     // obj.stimulusConditionName_nPlusOneTrial = currAssign + "+1";
                 }
 
@@ -625,7 +636,8 @@ const codeversion_begins = 1.4;//!! v1= pilot
                         }else{
                             obj.testPos_final = 0;
                         }
-                    }else if (['Cn+1','Dn+1'].includes(condi)) {
+                    }else if (['Cn+1','Dn+1'].includes(currAssign_nPlusOneTrial)) { //MODIFIED v1.5
+                        // console.log("modified v1.5")
                         obj.testPos_final = "don't konow yet";
                         if (ilist === (n_lists_singular-1)){
 
@@ -643,6 +655,7 @@ const codeversion_begins = 1.4;//!! v1= pilot
                 obj.is_old = null;
                 obj.correct_response_key = null;
                 obj.listNum_appear0_initial = ilist+1;
+                // console.log(obj.listNum_appear0_initial, obj.listNum_appear1_initial)
                 obj.stimulusConditionName_nPlusOneTrial = currAssign_nPlusOneTrial;
 
 
@@ -865,7 +878,8 @@ const codeversion_begins = 1.4;//!! v1= pilot
                     const getnow_FF = getListForPosition(obj_iFinalFoil.testPos_final, n_newInList_inItemScale_finaltoPatchDouble_now_arr);
                     obj_iFinalFoil.listNum_infinalOrder = getnow_FF.listNumber;
                     obj_iFinalFoil.testPos_final_iInList = getnow_FF.positionInList;
-                    obj_iFinalFoil.listNum_pickedFrom = ilist + 1;
+                    // obj_iFinalFoil.listNum_pickedFrom = ilist + 1;
+                    obj_iFinalFoil.listNum_pickedFrom = 0;
 
                     new_obj_store = deepcopyobj(obj);
                     new_obj_store.is_old=true;
@@ -882,10 +896,12 @@ const codeversion_begins = 1.4;//!! v1= pilot
                     new_obj_store.is_currentObjAppear1 = null;
                     new_obj_store.stimulusConditionName_nPlusOneTrial = null;
                     new_obj_store.num_CurrObjAppear = null;
+                    new_obj_store.listNum_pickedFrom = ilist+1;//MODIFIED
 
                     // console.log(getnow)
                     // console.log(finalTest_lists_arrArrObj_inUse,getnow.listNumber-1,getnow.positionInList-1)
                     finalTest_lists_arrArrObj_inUse[getnow.listNumber-1][getnow.positionInList-1] = new_obj_store;
+
                     finalTest_lists_arrArrObj_inUse[getnow_FF.listNumber-1][getnow_FF.positionInList-1] = obj_iFinalFoil
                     
                     finaltestMap.set(new_obj_store.id_picName,new_obj_store);
@@ -909,7 +925,6 @@ const codeversion_begins = 1.4;//!! v1= pilot
             //     currStudyMap.set(obj.id_picName, obj);
             // });x
 
- 
             study_lists_arrArrObj_inUse.push(study);
             test_lists_arrArrObj_inUse.push(test);
             // finalTest_lists_arrArrObj_inUse.push(finalTest_lists_arrObj);
@@ -925,7 +940,15 @@ const codeversion_begins = 1.4;//!! v1= pilot
         //Assign testPos_appear2_initial = obj.anRepeatedItem ? "don't know here, assign later" : 0;
         /// is_tested_appear2_initial
         //Though maybe a single property function call could handle the following task, the for loop is kept and used because more stuff might be add in later in this part. A for loop will be easier for later usage. 
-
+        // for (let n = 0; n < n_lists_singular ; n++) {
+        //     // console.log("n",n)
+        //     study_lists_arrArrObj_inUse[n].forEach(obj => {
+        //         console.log(`listNum_appear0_initial: ${obj.listNum_appear1_initial}, listNum_pickedFrom: ${obj.listNum_pickedFrom}`);
+        //     });
+        //     test_lists_arrArrObj_inUse[n].forEach(obj => {
+        //         console.log(`listNum_appear0_initial: ${obj.listNum_appear1_initial}, listNum_pickedFrom: ${obj.listNum_pickedFrom}`);
+        //     });
+        // }
         // let finalTest_lists_arrObj = [];
         // let finalTestPositionSet = new Map();
         // let itempnow=0;
@@ -999,6 +1022,7 @@ const codeversion_begins = 1.4;//!! v1= pilot
                     obj.listNum_appear2_initial = 0;
 
                     const objfi = finaltestMap.get(obj.id_picName);
+                    // console.log(objfi, obj.id_picName, obj.listNum_pickedFrom, obj.listNum_appear1_initial)
                     // console.log(objfi,nextObj,nextObj.id_picName)
                     if (objfi){
 
