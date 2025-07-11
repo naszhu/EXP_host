@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>REM E3: Multi-List Context Memory Experiment</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background: #264653;
+      color: #fff;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2.5rem;
+    }
+    header p {
+      margin: 0;
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .card h2 {
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+      color: #2a9d8f;
+      margin-bottom: 0.75rem;
+    }
+    .card h2 svg {
+      margin-right: 0.5rem;
+      width: 1.4em;
+      height: 1.4em;
+      fill: currentColor;
+    }
+    .card ul, .card ol {
+      margin: 0.5rem 0 0 1.2rem;
+    }
+    .card ul li, .card ol li {
+      margin-bottom: 0.5rem;
+    }
+    section h2 {
+      border-bottom: 2px solid #2a9d8f;
+      padding-bottom: 0.3rem;
+      color: #264653;
+    }
+    pre {
+      background: #eef2f5;
+      padding: 1rem;
+      overflow-x: auto;
+      border-radius: 4px;
+    }
+    code {
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+    footer {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    footer a, a {
+      color: #2a9d8f;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>REM E3 Front-End Hosting Page</h1>
+    <p>Shuchun Lai (Lea Lai) — Ph.D. Candidate & Researcher</p>
+  </header>
+
+  <main>
+    <div class="card" id="overview">
+      <h2>🔍 Overview</h2>
+      <p>
+        This front-end hosts <strong>Experiment 3</strong> (E3) in our long-term context memory project.
+        It's built with jsPsych, deployed via Cloudflare Pages, also hosted on firebase. It sends data through a Render backend,
+        and ultimately stores results in Firebase Firestore.
+      </p>
+    </div>
+
+    <div class="card" id="dissertation">
+      <h2>🎓 Dissertation Project</h2>
+      <p>
+        My Ph.D. dissertation explores long-term context memory using the REM
+        (Retrieving Effectively from Memory) model. Key themes include:
+      </p>
+      <ul>
+        <li>Context vs. feature similarity in recognition tasks</li>
+        <li>Stage-wise decision thresholds and memory trace strengthening</li>
+        <li>Computational simulations with Julia and Bayesian analyses with Stan</li>
+      </ul>
+      <p>
+        Experiment 3 extends these concepts to multi-list learning, examining how
+        context change by list and word influences recognition performance over time.
+      </p>
+<div class="card" id="links">
+  <h2>🔗 Important Links</h2>
+
+  <!-- Current repo & resources -->
+  <h3>This Project</h3>
+  <ul>
+    <li><a href="https://github.com/naszhu/EXP_host">Current Repositorty </a></li>
+    <li><a href="https://github.com/naszhu/EXP_host/issues">Issues &amp; Templates</a></li>
+    <li><a href="https://github.com/naszhu/EXP_host/releases">Releases &amp; Tags</a></li>
+  </ul>
+
+  <!-- Related dissertations & modeling -->
+  <h3>Related Repositories</h3>
+  <ul>
+    <li><a href="https://github.com/naszhu/project-context">project-context (The Full Dissertation Repository)</a></li>
+    <li><a href="https://github.com/naszhu/REM_E3_model_fixed">REM E3 Model Fixed (The Mathematical Model of E3)</a></li>
+  </ul>
+</div>
+
+
+    <div class="card" id="features">
+      <h2>⚙️ Features</h2>
+      <ul>
+        <li><strong>Modular JS</strong> under <code>/js/</code>:
+          <ul>
+            <li><code>const_general.js</code> & <code>const_exp.js</code> – parameters</li>
+            <li><code>helpfunctions.js</code> – utilities</li>
+            <li><code>load.js</code> – Firebase init & save wrapper</li>
+            <li><code>main.js</code> – jsPsych timeline & submission</li>
+          </ul>
+        </li>
+        <li><strong>Data pipeline</strong>:
+          <ol>
+            <li>Client POSTs results to Render endpoint</li>
+            <li>Render forwards to Firestore via Admin SDK</li>
+          </ol>
+        </li>
+        <li><strong>Export script:</strong> <code>export_firestore.py</code> (JSON/CSV)</li>
+        <li><strong>Firestore config:</strong> <code>firebase.json</code>, <code>firestore.rules</code>, <code>firestore.indexes.json</code></li>
+      </ul>
+    </div>
+
+
+
+    <section id="getting-started" class="card">
+      <h2>🚀 Getting Started</h2>
+      <pre><code># 1. Clone
+git clone https://github.com/naszhu/EXP_host.git
+cd EXP_host
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure Firebase
+#    - Paste your Firebase config into js/load.js
+#    - Adjust firebase.json rewrites if needed
+
+# 4. Deploy to Cloudflare Pages
+#    - Push to main branch
+#    - Auto-build publishes the site
+</code></pre>
+    </section>
+
+    <section id="license" class="card">
+      <h2>📄 License</h2>
+      <p>MIT © 2025 Shuchun Lai (Lea Lai) — <a href="https://github.com/naszhu">github.com/naszhu</a></p>
+    </section>
+  </main>
+
+  <footer>
+    Hosted on Firebase • Data via Render & Firebase • <a href="https://github.com/naszhu">github.com/naszhu</a>
+  </footer>
+
+  <script src="https://unpkg.com/jspsych"></script>
+  <script src="js/const_general.js"></script>
+  <script src="js/const_exp.js"></script>
+  <script src="js/helpfunctions.js"></script>
+  <script src="js/load.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    window.onload = () => {
+      initExperiment()
+        .then(() => jsPsych.run(timeline))
+        .catch(err => console.error('Initialization error:', err));
+    };
+  </script>
+</body>
+</html>
